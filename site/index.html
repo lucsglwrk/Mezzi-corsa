@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mezzi Corsa</title>
+<meta name="theme-color" content="#0b5c6b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mezzi Corsa">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: una colonna da telefono, come un tabellone di fermata; due colonne andata/ritorno su schermi larghi. */
+:root {
+  --bg: #eef3f3; --panel: #ffffff; --fg: #12282d; --muted: #566c71; --line: #d3dfe0;
+  --accent: #0b5c6b; --on-accent: #ffffff;
+  --train: #b3261e; --bus: #0a5fa8; --metro: #a35a00; --warn-bg: #fff1d6; --warn-fg: #6b4300;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Barlow", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1a1d; --panel: #15272b; --fg: #e6f0f1; --muted: #9db2b6; --line: #2a4247;
+    --accent: #5cc4d6; --on-accent: #06262c;
+    --train: #ff8a80; --bus: #7dbcf5; --metro: #f0b264; --warn-bg: #3d2d0c; --warn-fg: #ffdc9c;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--fg); font: 400 16px/1.4 var(--body);
+  padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px));
+}
+main { max-width: 1040px; margin: 0 auto; display: grid; gap: 20px; }
+h1 { font: 700 30px/1 var(--display); margin: 18px 0 2px; letter-spacing: .01em; }
+.sub { color: var(--muted); margin: 0; font-size: 14px; }
+form { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 14px; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+legend, label.f { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 6px; display: block; }
+.places { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.places input { position: absolute; opacity: 0; }
+.places label { text-align: center; padding: 11px 4px; border: 1px solid var(--line); border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; }
+.places input:checked + label { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.places input:focus-visible + label, select:focus-visible, input[type=time]:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.when { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 10px; }
+select, input[type=time] { width: 100%; height: 46px; font: 500 16px var(--body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; }
+.notice { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.notice:empty { display: none; }
+.results { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); align-items: start; }
+section.dir { display: grid; gap: 12px; min-width: 0; }
+.dir h2 { font: 700 24px/1.1 var(--display); margin: 0; }
+.dir .hint { color: var(--muted); font-size: 14px; margin: 2px 0 0; }
+.group { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.group h3 { margin: 0; padding: 9px 12px; font: 700 17px var(--display); letter-spacing: .03em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); }
+.group h3 span { font: 400 13px var(--body); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.group.treno h3 { color: var(--train); } .group.bus h3 { color: var(--bus); } .group.misto h3 { color: var(--accent); }
+.trip { padding: 10px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 5px; }
+.trip:last-of-type { border-bottom: 0; }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.times { font: 700 23px/1 var(--display); font-variant-numeric: tabular-nums; }
+.times small { font: 500 12px var(--body); color: var(--muted); }
+.dur { color: var(--muted); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.leg { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; font-size: 14px; align-items: start; }
+.badge { font: 700 14px/20px var(--display); min-width: 34px; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px; text-align: center; border-radius: 4px; color: var(--panel); }
+.badge.m0 { background: var(--train); } .badge.m1 { background: var(--bus); } .badge.m2 { background: var(--metro); }
+.leg time { font-weight: 600; font-variant-numeric: tabular-nums; }
+.dirn { color: var(--muted); font-size: 13px; display: block; }
+.more { width: 100%; background: none; border: 0; border-top: 1px solid var(--line); color: var(--accent); font: 600 14px var(--body); padding: 10px; cursor: pointer; }
+.empty { padding: 12px; color: var(--muted); font-size: 14px; margin: 0; }
+.check { font-size: 14px; color: var(--accent); font-weight: 600; }
+footer { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Mezzi Corsa</h1>
+    <p class="sub">Da via Menotti al punto di partenza, e ritorno</p>
+  </header>
+
+  <form id="form">
+    <fieldset>
+      <legend>Dove corri</legend>
+      <div class="places" id="places"></div>
+    </fieldset>
+    <div class="when">
+      <div><label class="f" for="date">Giorno</label><select id="date"></select></div>
+      <div><label class="f" for="time">Essere lì alle</label><input id="time" type="time" value="18:30"></div>
+    </div>
+  </form>
+
+  <div class="notice" id="notice" role="status"></div>
+  <div class="results" id="results"></div>
+  <footer id="foot">Caricamento degli orari…</footer>
+</main>
+
+<script>
+const CLASSES = [["treno", "Solo treno"], ["bus", "Solo bus e metro"], ["misto", "Treno + bus"]];
+const LIMIT = 5;
+const WINDOW_BEFORE = 120;
+const $ = (id) => document.getElementById(id);
+let index = null;
+const dayCache = {};
+
+const hhmm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const toMin = (s) => { const [h, m] = s.split(":").map(Number); return h * 60 + m; };
+
+function store(key, value) {
+  try {
+    if (value === undefined) return localStorage.getItem(key);
+    localStorage.setItem(key, value);
+  } catch { return null; }
+}
+
+function dateLabel(iso, today) {
+  const d = new Date(iso + "T12:00:00");
+  const text = d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+  const diff = Math.round((d - new Date(today + "T12:00:00")) / 86400000);
+  return diff === 0 ? `Oggi, ${text}` : diff === 1 ? `Domani, ${text}` : text;
+}
+
+function localToday() {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(n.getDate()).padStart(2, "0")}`;
+}
+
+async function loadDay(key) {
+  if (!dayCache[key]) {
+    const r = await fetch(`data/days/${key}.json`);
+    if (!r.ok) throw new Error("day");
+    dayCache[key] = await r.json();
+  }
+  return dayCache[key];
+}
+
+function legEl(leg, s, tpl) {
+  const [mode, line, head, from, to, dep, arr] = leg;
+  const el = tpl.cloneNode(true);
+  const badge = el.querySelector(".badge");
+  badge.textContent = s[line] || (mode === 0 ? "Treno" : "Bus");
+  badge.classList.add(`m${mode}`);
+  el.querySelector(".from").textContent = s[from];
+  el.querySelector(".dep").textContent = hhmm(dep);
+  el.querySelector(".to").textContent = s[to];
+  el.querySelector(".arr").textContent = hhmm(arr);
+  el.querySelector(".dirn").textContent = s[head] ? `direzione ${s[head]}` : "";
+  return el;
+}
+
+const LEG = (() => {
+  const t = document.createElement("div");
+  t.className = "leg";
+  t.innerHTML = '<span class="badge"></span><span><span class="from"></span> <time class="dep"></time> → <span class="to"></span> <time class="arr"></time><span class="dirn"></span></span>';
+  return t;
+})();
+
+function tripEl(j, s, labels) {
+  const [leave, arrive, , legs] = j;
+  const el = document.createElement("article");
+  el.className = "trip";
+  const head = document.createElement("div");
+  head.className = "head";
+  const times = document.createElement("div");
+  times.className = "times";
+  times.innerHTML = `<small>${labels[0]}</small> ${hhmm(leave)} <small>${labels[1]}</small> ${hhmm(arrive)}`;
+  const dur = document.createElement("div");
+  dur.className = "dur";
+  const changes = legs.length - 1;
+  dur.textContent = `${arrive - leave} min${changes ? " · 1 cambio" : ""}`;
+  head.append(times, dur);
+  el.append(head);
+  legs.forEach((l) => el.append(legEl(l, s, LEG)));
+  return el;
+}
+
+function groupEl(cls, title, items, s, labels) {
+  const box = document.createElement("div");
+  box.className = `group ${cls}`;
+  const h = document.createElement("h3");
+  h.textContent = title;
+  const n = document.createElement("span");
+  n.textContent = items.length === 1 ? "1 soluzione" : `${items.length} soluzioni`;
+  h.append(n);
+  box.append(h);
+  if (!items.length) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = "Nessuna soluzione in questa fascia.";
+    box.append(p);
+    return box;
+  }
+  items.slice(0, LIMIT).forEach((j) => box.append(tripEl(j, s, labels)));
+  if (items.length > LIMIT) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "more";
+    more.textContent = `Mostra altre ${items.length - LIMIT}`;
+    more.onclick = () => {
+      more.remove();
+      items.slice(LIMIT).forEach((j) => box.append(tripEl(j, s, labels)));
+    };
+    box.append(more);
+  }
+  return box;
+}
+
+function mapsLink(a, b) {
+  const q = new URLSearchParams({ api: "1", origin: a, destination: b, travelmode: "transit" });
+  const link = document.createElement("a");
+  link.className = "check";
+  link.href = `https://www.google.com/maps/dir/?${q}`;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = "Controlla ritardi su Google Maps";
+  return link;
+}
+
+function sectionEl(title, hint, groups, a, b) {
+  const sec = document.createElement("section");
+  sec.className = "dir";
+  const wrap = document.createElement("div");
+  const h = document.createElement("h2");
+  h.textContent = title;
+  const p = document.createElement("p");
+  p.className = "hint";
+  p.textContent = hint;
+  wrap.append(h, p);
+  sec.append(wrap, ...groups, mapsLink(a, b));
+  return sec;
+}
+
+async function render() {
+  if (!index) return;
+  const place = document.querySelector("input[name=place]:checked").value;
+  const date = $("date").value;
+  const target = toMin($("time").value || "18:30");
+  store("place", place);
+  store("time", $("time").value);
+  const info = index.dates[date];
+  const P = index.places;
+
+  const warn = [];
+  if (!info.trains) warn.push("Per questo giorno non sono ancora pubblicati gli orari dei treni: trovi solo i bus.");
+  if (!info.buses) warn.push("Per questo giorno non sono ancora pubblicati gli orari AMT: trovi solo i treni.");
+  $("notice").textContent = warn.join(" ");
+
+  let day;
+  try {
+    day = await loadDay(info.day);
+  } catch {
+    $("notice").textContent = "Non riesco a caricare gli orari. Controlla la connessione e riprova.";
+    return;
+  }
+  const out = day.od[`casa>${place}`] || {};
+  const back = day.od[`${place}>casa`] || {};
+  const name = P[place].name;
+
+  const outward = CLASSES.map(([c, t]) => {
+    const items = (out[c] || []).filter((j) => j[1] <= target && j[1] > target - WINDOW_BEFORE)
+      .sort((x, y) => y[1] - x[1] || y[0] - x[0]);
+    return groupEl(c, t, items, day.s, ["esci", "arrivi"]);
+  });
+  const home = CLASSES.map(([c, t]) => {
+    const items = (back[c] || []).filter((j) => j[0] >= target + 60 && j[0] <= target + 240)
+      .sort((x, y) => x[0] - y[0] || x[1] - y[1]);
+    return groupEl(c, t, items, day.s, ["parti", "a casa"]);
+  });
+
+  $("results").replaceChildren(
+    sectionEl(`Andata a ${name}`, `Per arrivare entro le ${hhmm(target)}. Le prime sono quelle che ti fanno uscire più tardi.`, outward, P.casa.maps, P[place].maps),
+    sectionEl("Ritorno a casa", `Partenze da ${name} tra le ${hhmm(target + 60)} e le ${hhmm(target + 240)}.`, home, P[place].maps, P.casa.maps));
+}
+
+async function init() {
+  try {
+    const r = await fetch("data/index.json", { cache: "no-cache" });
+    if (!r.ok) throw new Error("index");
+    index = await r.json();
+  } catch {
+    $("foot").textContent = "";
+    $("notice").textContent = "Orari non disponibili al momento. Riprova tra poco.";
+    return;
+  }
+  const saved = store("place");
+  const keys = Object.keys(index.places).filter((k) => k !== "casa");
+  $("places").replaceChildren(...keys.flatMap((k) => {
+    const input = document.createElement("input");
+    input.type = "radio"; input.name = "place"; input.id = `p-${k}`; input.value = k;
+    input.checked = saved ? saved === k : k === keys[0];
+    const label = document.createElement("label");
+    label.htmlFor = input.id;
+    label.textContent = index.places[k].name.replace("Piazzale ", "");
+    return [input, label];
+  }));
+  if (!document.querySelector("input[name=place]:checked")) document.querySelector("input[name=place]").checked = true;
+
+  const today = localToday();
+  const dates = Object.keys(index.dates).filter((d) => d >= today);
+  if (!dates.length) {
+    $("foot").textContent = "";
+    $("notice").textContent = "Gli orari caricati sono scaduti. Il prossimo aggiornamento automatico li rinnoverà.";
+    return;
+  }
+  $("date").replaceChildren(...dates.map((d) => new Option(dateLabel(d, today), d)));
+  const savedTime = store("time");
+  if (savedTime) $("time").value = savedTime;
+
+  const when = new Date(index.generated).toLocaleDateString("it-IT", { day: "numeric", month: "long" });
+  $("foot").textContent = `Orari ufficiali AMT e Trenitalia, aggiornati il ${when}. Sono orari programmati: scioperi, ritardi e deviazioni non sono inclusi. Tratti a piedi stimati a passo tranquillo.`;
+
+  $("form").addEventListener("change", render);
+  $("time").addEventListener("input", render);
+  $("form").addEventListener("submit", (e) => e.preventDefault());
+  render();
+}
+init();
+</script>
+</body>
+</html>

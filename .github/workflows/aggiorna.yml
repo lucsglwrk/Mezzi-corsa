@@ -1,0 +1,50 @@
+name: Aggiorna orari e sito
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"   # ogni lunedi
+    - cron: "17 3 * * 4"   # ogni giovedi
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test del calcolo
+        run: python -m unittest discover -s tests -v
+      - name: Scarica gli orari e calcola i percorsi
+        run: python scripts/build_data.py --out site/data --report report.txt
+      - name: Salva il rapporto
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add report.txt
+          git diff --cached --quiet || git commit -m "Aggiorna rapporto dati [skip ci]"
+          git push
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

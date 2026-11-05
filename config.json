@@ -1,0 +1,36 @@
+{
+  "places": {
+    "casa": {
+      "name": "Casa",
+      "maps": "Via Ciro Menotti, Genova",
+      "near": [44.4265, 8.8500],
+      "match": ["MENOTTI"],
+      "bus_radius": 700,
+      "rail_radius": 1500
+    },
+    "sturla": {
+      "name": "Sturla",
+      "maps": "Stazione di Genova Sturla",
+      "near": [44.3930, 8.9790],
+      "match": ["GENOVA STURLA"],
+      "bus_radius": 600,
+      "rail_radius": 700
+    },
+    "kennedy": {
+      "name": "Piazzale Kennedy",
+      "maps": "Piazzale Kennedy, Genova",
+      "near": [44.3945, 8.9455],
+      "pos": [44.3945, 8.9455],
+      "bus_radius": 800,
+      "rail_radius": 1500
+    },
+    "quarto": {
+      "name": "Quarto",
+      "maps": "Stazione di Genova Quarto dei Mille",
+      "near": [44.3900, 8.9930],
+      "match": ["QUARTO DEI MILLE"],
+      "bus_radius": 600,
+      "rail_radius": 700
+    }
+  }
+}
