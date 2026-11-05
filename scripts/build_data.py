@@ -4,7 +4,7 @@
 Uso:  python scripts/build_data.py --out site/data --report report.txt
       python scripts/build_data.py --amt a.zip --rail t.zip --out ...   (file locali)
 
-Solo libreria standard. Limite voluto: al massimo un cambio.
+Solo libreria standard. Limite voluto: al massimo due cambi.
 """
 import argparse
 import bisect
@@ -223,7 +223,7 @@ def classify(modes):
 def pareto(items):
     """Tiene una soluzione solo se nessun'altra parte dopo e arriva prima (a pari cambi)."""
     items = sorted(items, key=lambda j: (j["arrive"], -j["leave"], len(j["legs"])))
-    best = {1: -1, 2: -1}
+    best = {1: -1, 2: -1, 3: -1}
     kept = []
     for j in items:
         n = len(j["legs"])
@@ -263,6 +263,52 @@ def journeys(net, today, origin, dest):
         lst.sort()
     keys = {s: [e[0] for e in lst] for s, lst in stop_deps.items()}
 
+    def suffix(deps):
+        """Per ogni fermata: dall'ora x in poi, la coincidenza che arriva prima."""
+        table = {}
+        for s, lst in deps.items():
+            lst.sort(key=lambda e: e[0])
+            best, out = None, [None] * len(lst)
+            for p in range(len(lst) - 1, -1, -1):
+                if best is None or lst[p][1] <= best[1]:
+                    best = lst[p]
+                out[p] = best
+            table[s] = ([e[0] for e in lst], out)
+        return table
+
+    def earliest(table, stop, ready, skip):
+        entry = table.get(stop)
+        if not entry:
+            return None
+        p = bisect.bisect_left(entry[0], ready)
+        if p == len(entry[0]) or entry[1][p][2] == skip:
+            return None
+        return entry[1][p]
+
+    one_left = defaultdict(list)
+    for s, lst in stop_deps.items():
+        for dep, u, m in lst:
+            one_left[s].append((dep - CHANGE_MARGIN[trips[u][1]], reach[u][m][0], u, m))
+    after_one = suffix(one_left)
+
+    # tail2[t][i]: seconda corsa e cambio che portano prima a destinazione dopo la fermata i
+    tail2, two_left = {}, defaultdict(list)
+    for t in today:
+        seq = times[t]
+        tail, best = [None] * len(seq), None
+        for i in range(len(seq) - 1, -1, -1):
+            tail[i] = best
+            _, x, arr, _ = seq[i]
+            for y, wk in xfer.get(x, ()):
+                hit = earliest(after_one, y, arr + wk, t)
+                if hit and (best is None or hit[1] < best[0]):
+                    best = (hit[1], i, hit[2], hit[3])
+        tail2[t] = tail
+        for i, (_, s, _, dep) in enumerate(seq[:-1]):
+            if tail[i]:
+                two_left[s].append((dep - CHANGE_MARGIN[trips[t][1]], tail[i][0], t, i))
+    after_two = suffix(two_left)
+
     found = defaultdict(list)
 
     def add(legs, walk_in, leave, arrive):
@@ -282,6 +328,14 @@ def journeys(net, today, origin, dest):
             for j in range(i + 1, len(seq)):
                 x, arr = seq[j][1], seq[j][2]
                 for y, wk in xfer.get(x, ()):
+                    hit = earliest(after_two, y, arr + wk, t)
+                    if hit:
+                        arrive, u, m = hit[1], hit[2], hit[3]
+                        _, n, v, q = tail2[u][m]
+                        _, r = reach[v][q]
+                        add([leg(trips, t, seq, i, j, stops),
+                             leg(trips, u, times[u], m, n, stops),
+                             leg(trips, v, times[v], q, r, stops)], w0, leave, arrive)
                     lst, ks = stop_deps.get(y), keys.get(y)
                     if not lst:
                         continue
@@ -391,9 +445,9 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
         counts = ", ".join(f"{c}: {len(v)}" for c, v in sorted(classes.items()))
         report.append(f"{od}: {counts or 'NESSUNA SOLUZIONE'}")
     report.append("")
-    sample = cache[first].get("casa>sturla", {})
+    sample = cache[first].get("casa>quarto", {})
     for cls, items in sorted(sample.items()):
-        for j in items[len(items) // 2:len(items) // 2 + 2]:
+        for j in [j for j in items if 1050 <= j["arrive"] <= 1110][:3]:
             parts = " + ".join(f"{l['line']} {l['from']} {fmt(l['dep'])} > {l['to']} {fmt(l['arr'])}"
                                for l in j["legs"])
             report.append(f"esempio {cls}: esci {fmt(j['leave'])}, arrivi {fmt(j['arrive'])}: {parts}")

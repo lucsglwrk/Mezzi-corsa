@@ -169,7 +169,7 @@ function tripEl(j, s, labels) {
   const dur = document.createElement("div");
   dur.className = "dur";
   const changes = legs.length - 1;
-  dur.textContent = `${arrive - leave} min${changes ? " · 1 cambio" : ""}`;
+  dur.textContent = `${arrive - leave} min${changes ? ` · ${changes} ${changes === 1 ? "cambio" : "cambi"}` : ""}`;
   head.append(times, dur);
   el.append(head);
   legs.forEach((l) => el.append(legEl(l, s, LEG)));

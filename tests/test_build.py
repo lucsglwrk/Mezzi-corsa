@@ -61,13 +61,16 @@ def network():
         amt_routes[f"K{n}"] = "L31"
         amt_calls[f"J{n}"] = [("KEN", s + 3), ("BRG", s + 11)]
         amt_routes[f"J{n}"] = "L31"
+        amt_calls[f"Q{n}"] = [("KEN", s + 14), ("QUB", s + 40)]
+        amt_routes[f"Q{n}"] = "L8"
     amt = zip_of({
         "stops.txt": "stop_id,stop_name,stop_lat,stop_lon\n"
                      "MEN,Menotti 2/Chiesa,44.4270,8.8480\n"
                      "BRG,Brignole bus,44.4066,8.9460\n"
                      "KEN,Kennedy bus,44.3950,8.9450\n"
-                     "STB,Sturla bus,44.3925,8.9792\n",
-        "routes.txt": "route_id,route_short_name,route_type\nL1,1,3\nL31,31,3\n",
+                     "STB,Sturla bus,44.3925,8.9792\n"
+                     "QUB,Quarto bus,44.3890,8.9950\n",
+        "routes.txt": "route_id,route_short_name,route_type\nL1,1,3\nL31,31,3\nL8,8,3\n",
         "trips.txt": trips_txt(amt_routes),
         "stop_times.txt": stop_times(amt_calls),
         "calendar.txt": CAL})
@@ -116,6 +119,12 @@ class BuildTest(unittest.TestCase):
         j = self.day["od"]["casa>kennedy"]["misto"][0]
         self.assertEqual([leg[0] for leg in j[3]], [0, 1])
         self.assertGreaterEqual(j[3][1][5] - j[3][0][6], b.CHANGE_MARGIN["bus"])
+
+    def test_bus_con_due_cambi(self):
+        j = self.day["od"]["casa>quarto"]["bus"][0]
+        self.assertEqual(len(j[3]), 3)
+        for prev, nxt in zip(j[3], j[3][1:]):
+            self.assertGreaterEqual(nxt[5] - prev[6], b.CHANGE_MARGIN["bus"])
 
     def test_orari_coerenti(self):
         for classes in self.day["od"].values():

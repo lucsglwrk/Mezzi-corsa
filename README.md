@@ -21,4 +21,4 @@ Luoghi, punti esatti e raggi a piedi sono in `config.json`. Per fissare un punto
 - AMT Genova: GTFS ufficiale
 - Trenitalia Liguria: GTFS di Regione Liguria (CC BY 4.0)
 
-Sono orari programmati. Per scioperi e ritardi usa il link di controllo nella pagina. Il calcolo considera al massimo un cambio.
+Sono orari programmati. Per scioperi e ritardi usa il link di controllo nella pagina. Il calcolo considera al massimo due cambi.
