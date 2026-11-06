@@ -25,4 +25,4 @@ codici fermata: ['']
 esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
 
 # Prova ponte live
-Hello World!
+{"bus":{"0075":[{"line":"128","dest":"ERZELLI","time":"11:22","min":null},{"line":"159","dest":"SESTRI","time":"11:22","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:26","min":5},{"line":"1","dest":"CARICAMENTO","time":"11:29","min":8},{"line":"172","dest":"SESTRI","time":"11:32","min":11},{"line":"1","dest":"CARICAMENTO","time":"11:38","min":17},{"line":"159","dest":"SESTRI","time":"11:40","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:45","min":24}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-06T10:21:33.058Z"}
