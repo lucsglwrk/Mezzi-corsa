@@ -7,7 +7,7 @@ Piazzale Kennedy: 44.39450, 8.94550, 47 fermate: BARABINO 1/PALERMO, BARABINO 2/
 Quarto: 44.38861, 8.99598, 15 fermate: CARRARA 1/V MAGGIO, CARRARA 5/V MAGGIO, GENOVA QUARTO DEI MILLE, QUARTO 1/PRIARUGGIA, QUARTO 2/CAPO SAN ROCCO, QUARTO 2/QUARTARA, QUARTO 3/CAPO SAN ROCCO, QUARTO 3/QUARTARA, V MAGGIO 1/PRIARUGGIA, V MAGGIO 2/CARRARA, V MAGGIO 2/QUARTO FS, V MAGGIO 3/VILLA CARRARA, V MAGGIO 4/CARRARA, V MAGGIO 4/QUARTO FS
 
 casa>sturla: bus: 66, misto: 11, treno: 52
-sturla>casa: bus: 87, misto: 12, treno: 49
+sturla>casa: bus: 87, misto: 13, treno: 49
 casa>kennedy: bus: 154, misto: 61, treno: 70
 kennedy>casa: bus: 138, misto: 86, treno: 66
 casa>quarto: bus: 56, misto: 8, treno: 52
