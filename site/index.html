@@ -273,6 +273,8 @@ async function render() {
   const back = day.od[`${place}>casa`] || {};
   const name = P[place].name;
 
+  liveTrips = [];
+  liveDate = date;
   const outward = CLASSES.map(([c, t]) => {
     const items = (out[c] || []).filter((j) => j[1] <= target && j[1] > target - WINDOW_BEFORE)
       .sort((x, y) => y[1] - x[1] || y[0] - x[0]);
@@ -284,8 +286,6 @@ async function render() {
     return groupEl(c, t, items, day.s, ["parti", "a casa"]);
   });
 
-  liveTrips = [];
-  liveDate = date;
   $("results").replaceChildren(
     sectionEl(`Andata a ${name}`, `Per arrivare entro le ${hhmm(target)}. Le prime sono quelle che ti fanno uscire più tardi.`, outward, P.casa.maps, P[place].maps),
     sectionEl("Ritorno a casa", `Partenze da ${name} tra le ${hhmm(target + 60)} e le ${hhmm(target + 240)}.`, home, P[place].maps, P.casa.maps));
