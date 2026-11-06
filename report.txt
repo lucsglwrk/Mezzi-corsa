@@ -25,22 +25,4 @@ codici fermata: ['']
 esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
 
 # Prova ponte live
-{"bus":{"0075":[{"line":"3","dest":"PRINCIPE FS","time":"11:28","min":null},{"line":"1","dest":"CARICAMENTO","time":"11:29","min":2},{"line":"172","dest":"SESTRI","time":"11:32","min":5},{"line":"1","dest":"CARICAMENTO","time":"11:38","min":11},{"line":"159","dest":"SESTRI","time":"11:40","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:45","min":18},{"line":"1","dest":"CARICAMENTO","time":"11:51","min":24},{"line":"128","dest":"ERZELLI","time":"11:51","min":24}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-06T10:27:28.872Z"}
-# Prova ViaggiaTreno
-URL http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
-GENOVA SESTRI PONENTE AEROPORTO|S04537
-
-HTTP 200 finale http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
-
-URL https://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
-GENOVA SESTRI PONENTE AEROPORTO|S04537
-
-HTTP 200 finale http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
-
-URL https://www.viaggiatreno.it/infomobilitamobile/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
-GENOVA SESTRI PONENTE AEROPORTO|S04537
-
-HTTP 200 finale http://www.viaggiatreno.it/infomobilitamobile/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
-
-CODICE S04537
-[{"arrivato":false,"dataPartenzaTrenoAsDate":"2026-11-06","dataPartenzaTreno":1793919600000,"partenzaTreno":1793958420000,"millisDataPartenza":"1793919600000","numeroTreno":12361,"categoria":"REG","categoriaDescrizione":"REG","origine":null,"codOrigine":"S04801","destinazione":"SESTRI LEVANTE","codDestinazione":null,"origineEstera":null,"destinazioneEstera":null,"oraPartenzaEstera":null,"oraArrivoEstera":null,"tratta":0,"regione":0,"origineZero":null,"destinazioneZero":null,"orarioPartenzaZero":null,"orarioArrivoZero":null,"circolante":true,"codiceCliente":2,"binarioEffettivoArrivoCodice":null,"binarioEffettivoArrivoDescrizione":null,"binarioEffettivoArrivoTipo":null,"binarioProgrammatoArrivoCodice":null,"binarioProgrammatoArrivoDescrizione":null,"binarioEffettivoPartenzaCodice":null,"binarioEffettivoPartenzaDescrizione":null,"binarioEffettivoPartenzaTipo":null,"binarioProgrammatoPartenzaCodice":null,"binarioProgrammatoPartenzaDescrizione":"1","subTitle":null,"esisteCorsaZero":null,"orientamento":null,"inStazione":false,"haCambiNumero":false,"nonPartito":false,"provvedimento":0,"riprogrammazione":"N","orarioPartenza":1793959200000,"orarioArrivo":null,"stazionePartenza":null,"stazio
+{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"11:39","min":5},{"line":"159","dest":"SESTRI","time":"11:40","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:46","min":11},{"line":"1","dest":"CARICAMENTO","time":"11:52","min":17},{"line":"128","dest":"ERZELLI","time":"11:53","min":18},{"line":"1","dest":"CARICAMENTO","time":"11:59","min":25},{"line":"172","dest":"SESTRI","time":"12:00","min":26},{"line":"159","dest":"SESTRI","time":"12:02","min":28}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-06T10:34:59.953Z"}
