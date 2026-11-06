@@ -13,8 +13,13 @@ kennedy>casa: bus: 138, misto: 86, treno: 66
 casa>quarto: bus: 56, misto: 8, treno: 52
 quarto>casa: bus: 77, misto: 9, treno: 50
 
+codici fermata: ['0075', '2541', '0298']
 esempio bus: esci 16:38, arrivi 18:09: 1 MENOTTI 2/CHIESA 16:41 > MARITTIMA/PRINCIPE FS 17:16 + 20 GRAMSCI 1/COMMENDA 17:27 > BUENOS AIRES 1/LAMBRUSCHINI 17:44 + 15 BUENOS AIRES 1/LAMBRUSCHINI 17:46 > V MAGGIO 4/QUARTO FS 18:07
+codici fermata: ['0075', '2541', '0298']
 esempio bus: esci 16:51, arrivi 18:20: 3 MENOTTI 2/CHIESA 16:54 > DORIA/METRO' PRINCIPE 17:28 + 20 GRAMSCI 1/COMMENDA 17:36 > BUENOS AIRES 1/LAMBRUSCHINI 17:53 + 15 BUENOS AIRES 1/LAMBRUSCHINI 17:57 > V MAGGIO 4/QUARTO FS 18:18
+codici fermata: ['']
 esempio treno: esci 17:01, arrivi 17:45: REG 22879 GENOVA SESTRI PONENTE 17:09 > GENOVA QUARTO DEI MILLE 17:45
+codici fermata: ['']
 esempio treno: esci 17:16, arrivi 17:57: REG 12427 GENOVA SESTRI PONENTE 17:24 > GENOVA QUARTO DEI MILLE 17:57
+codici fermata: ['']
 esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
