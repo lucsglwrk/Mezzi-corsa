@@ -40,6 +40,7 @@ MAX_DURATION = 110                # min, porta a porta
 BOARD_MARGIN = {"train": 3, "bus": 1, "metro": 2}  # anticipo in fermata
 CHANGE_MARGIN = {"train": 5, "bus": 2, "metro": 3}
 HORIZON_DAYS = 28
+CODES = {}  # fermata -> codice AMT per i passaggi live
 
 
 def load_config():
@@ -111,11 +112,13 @@ class Feed:
         z = zipfile.ZipFile(io.BytesIO(data))
         self.prefix = prefix
         self.stops = {}
+        self.codes = {}
         for r in rows(z, "stops.txt"):
             if r.get("stop_lat") and r.get("stop_lon"):
                 pos = (float(r["stop_lat"]), float(r["stop_lon"]))
                 if BOX[0] <= pos[0] <= BOX[1] and BOX[2] <= pos[1] <= BOX[3]:
                     self.stops[prefix + r["stop_id"]] = (r["stop_name"].strip(), pos)
+                    self.codes[prefix + r["stop_id"]] = (r.get("stop_code") or r["stop_id"]).strip()
         self.routes = {}
         for r in rows(z, "routes.txt"):
             mode = modes.get(r["route_type"])
@@ -238,7 +241,7 @@ def leg(trips, trip, seq, i, k, stops):
     _, mode, label, head = trips[trip]
     return {"mode": mode, "line": label, "head": head,
             "from": stops[seq[i][1]][0], "to": stops[seq[k][1]][0],
-            "dep": seq[i][3], "arr": seq[k][2]}
+            "dep": seq[i][3], "arr": seq[k][2], "code": CODES.get(seq[i][1], "")}
 
 
 def journeys(net, today, origin, dest):
@@ -377,7 +380,7 @@ def compact(day):
             out[od][cls] = [
                 [j["leave"], j["arrive"], j["walk_in"],
                  [[{"train": 0, "bus": 1, "metro": 2}[l["mode"]], s(l["line"]), s(l["head"]),
-                   s(l["from"]), s(l["to"]), l["dep"], l["arr"]] for l in j["legs"]]]
+                   s(l["from"]), s(l["to"]), l["dep"], l["arr"], l["code"]] for l in j["legs"]]]
                 for j in items]
     return {"s": table, "od": out}
 
@@ -390,6 +393,7 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
     amt = Feed(amt_data, "a:", {"3": "bus", "1": "metro"})
     rail = Feed(rail_data, "t:", {"2": "train"})
     stops = {**amt.stops, **rail.stops}
+    CODES.update(amt.codes)
     rail_ids = set(rail.stops)
     trips = {**amt.trips, **rail.trips}
     times = {**amt.times, **rail.times}
@@ -450,6 +454,7 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
         for j in [j for j in items if 1050 <= j["arrive"] <= 1110][:3]:
             parts = " + ".join(f"{l['line']} {l['from']} {fmt(l['dep'])} > {l['to']} {fmt(l['arr'])}"
                                for l in j["legs"])
+            report.append(f"codici fermata: {[l['code'] for l in j['legs']]}")
             report.append(f"esempio {cls}: esci {fmt(j['leave'])}, arrivi {fmt(j['arrive'])}: {parts}")
     no_rail = [d for d, v in dates.items() if not v["trains"]]
     if no_rail:

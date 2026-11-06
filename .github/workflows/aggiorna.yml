@@ -26,7 +26,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Test del calcolo
-        run: python -m unittest discover -s tests -v
+        run: |
+          python -m unittest discover -s tests -v
+          node --test tests/worker.test.mjs
       - name: Scarica gli orari e calcola i percorsi
         run: python scripts/build_data.py --out site/data --report report.txt
       - name: Salva il rapporto

@@ -16,7 +16,7 @@
 :root {
   --bg: #eef3f3; --panel: #ffffff; --fg: #12282d; --muted: #566c71; --line: #d3dfe0;
   --accent: #0b5c6b; --on-accent: #ffffff;
-  --train: #b3261e; --bus: #0a5fa8; --metro: #a35a00; --warn-bg: #fff1d6; --warn-fg: #6b4300;
+  --train: #b3261e; --bus: #0a5fa8; --metro: #a35a00; --warn-bg: #fff1d6; --warn-fg: #6b4300; --ok: #17703f; --late: #a34b00;
   --display: "Barlow Condensed", "Arial Narrow", sans-serif;
   --body: "Barlow", system-ui, sans-serif;
 }
@@ -24,7 +24,7 @@
   :root {
     --bg: #0d1a1d; --panel: #15272b; --fg: #e6f0f1; --muted: #9db2b6; --line: #2a4247;
     --accent: #5cc4d6; --on-accent: #06262c;
-    --train: #ff8a80; --bus: #7dbcf5; --metro: #f0b264; --warn-bg: #3d2d0c; --warn-fg: #ffdc9c;
+    --train: #ff8a80; --bus: #7dbcf5; --metro: #f0b264; --warn-bg: #3d2d0c; --warn-fg: #ffdc9c; --ok: #6fd6a0; --late: #ffb066;
     color-scheme: dark;
   }
 }
@@ -70,6 +70,10 @@ section.dir { display: grid; gap: 12px; min-width: 0; }
 .dirn { color: var(--muted); font-size: 13px; display: block; }
 .more { width: 100%; background: none; border: 0; border-top: 1px solid var(--line); color: var(--accent); font: 600 14px var(--body); padding: 10px; cursor: pointer; }
 .empty { padding: 12px; color: var(--muted); font-size: 14px; margin: 0; }
+.live { display: inline-block; font-size: 13px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.live.ok { color: var(--ok); } .live.late, .risk { color: var(--late); } .live.gone { color: var(--train); }
+.risk { font-size: 13px; font-weight: 600; }
+.livebar { color: var(--muted); font-size: 13px; }
 .check { font-size: 14px; color: var(--accent); font-weight: 600; }
 footer { color: var(--muted); font-size: 13px; }
 </style>
@@ -93,10 +97,12 @@ footer { color: var(--muted); font-size: 13px; }
   </form>
 
   <div class="notice" id="notice" role="status"></div>
+  <div class="livebar" id="livebar" aria-live="polite"></div>
   <div class="results" id="results"></div>
   <footer id="foot">Caricamento degli orari…</footer>
 </main>
 
+<script src="live-config.js"></script>
 <script>
 const CLASSES = [["treno", "Solo treno"], ["bus", "Solo bus e metro"], ["misto", "Treno + bus"]];
 const LIMIT = 5;
@@ -147,7 +153,10 @@ function legEl(leg, s, tpl) {
   el.querySelector(".to").textContent = s[to];
   el.querySelector(".arr").textContent = hhmm(arr);
   el.querySelector(".dirn").textContent = s[head] ? `direzione ${s[head]}` : "";
-  return el;
+  const live = document.createElement("span");
+  live.className = "live";
+  el.lastElementChild.append(live);
+  return { el, live };
 }
 
 const LEG = (() => {
@@ -172,7 +181,12 @@ function tripEl(j, s, labels) {
   dur.textContent = `${arrive - leave} min${changes ? ` · ${changes} ${changes === 1 ? "cambio" : "cambi"}` : ""}`;
   head.append(times, dur);
   el.append(head);
-  legs.forEach((l) => el.append(legEl(l, s, LEG)));
+  const parts = legs.map((l) => ({ leg: l, ...legEl(l, s, LEG) }));
+  parts.forEach((p) => el.append(p.el));
+  const risk = document.createElement("div");
+  risk.className = "risk";
+  el.append(risk);
+  liveTrips.push({ parts, risk, s });
   return el;
 }
 
@@ -201,6 +215,7 @@ function groupEl(cls, title, items, s, labels) {
     more.onclick = () => {
       more.remove();
       items.slice(LIMIT).forEach((j) => box.append(tripEl(j, s, labels)));
+      refreshLive();
     };
     box.append(more);
   }
@@ -214,7 +229,7 @@ function mapsLink(a, b) {
   link.href = `https://www.google.com/maps/dir/?${q}`;
   link.target = "_blank";
   link.rel = "noopener";
-  link.textContent = "Controlla ritardi su Google Maps";
+  link.textContent = "Apri in Google Maps";
   return link;
 }
 
@@ -269,9 +284,103 @@ async function render() {
     return groupEl(c, t, items, day.s, ["parti", "a casa"]);
   });
 
+  liveTrips = [];
+  liveDate = date;
   $("results").replaceChildren(
     sectionEl(`Andata a ${name}`, `Per arrivare entro le ${hhmm(target)}. Le prime sono quelle che ti fanno uscire più tardi.`, outward, P.casa.maps, P[place].maps),
     sectionEl("Ritorno a casa", `Partenze da ${name} tra le ${hhmm(target + 60)} e le ${hhmm(target + 240)}.`, home, P[place].maps, P.casa.maps));
+  refreshLive();
+}
+
+const LIVE_BEFORE = 10;
+const LIVE_AHEAD = 120;
+const REFRESH_MS = 30000;
+let liveTrips = [];
+let liveDate = "";
+let liveData = { bus: {}, train: {} };
+
+const norm = (l) => String(l).replace(/^0+(?=.)/, "").toUpperCase();
+const nowMin = () => { const n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
+
+function trackable() {
+  if (liveDate !== localToday()) return [];
+  const now = nowMin();
+  return liveTrips.flatMap((t) => t.parts).filter((p) => p.leg[5] >= now - LIVE_BEFORE && p.leg[5] <= now + LIVE_AHEAD);
+}
+
+function liveFor(part, s) {
+  const [mode, line, , from, , dep] = part.leg;
+  if (mode === 0) {
+    const number = (s[line].match(/\d+/g) || []).pop();
+    const row = (liveData.train[s[from]] || []).find((t) => t.number === number);
+    if (!row) return null;
+    return { delay: row.delay, cancelled: row.cancelled, platform: row.platform, label: "" };
+  }
+  const rows = (liveData.bus[part.leg[7]] || []).filter((r) => norm(r.line) === norm(s[line]));
+  let best = null;
+  rows.forEach((r) => {
+    const delay = toMin(r.time) - dep;
+    if (Math.abs(delay) <= 20 && (!best || Math.abs(delay) < Math.abs(best.delay))) best = { delay, time: r.time };
+  });
+  return best;
+}
+
+function paintLive() {
+  liveTrips.forEach(({ parts, risk, s }) => {
+    let riskText = "";
+    parts.forEach((p, i) => {
+      p.liveInfo = liveFor(p, s);
+      const info = p.liveInfo;
+      if (!info) { p.live.textContent = ""; p.live.className = "live"; return; }
+      const platform = info.platform ? ` · binario ${info.platform}` : "";
+      if (info.cancelled) {
+        p.live.textContent = "Cancellato";
+        p.live.className = "live gone";
+      } else {
+        const at = hhmm(p.leg[5] + info.delay);
+        const late = info.delay >= 2;
+        const early = info.delay <= -2;
+        p.live.textContent = (late ? `${info.delay} min di ritardo, passa alle ${at}`
+          : early ? `In anticipo, passa alle ${at}` : "In orario") + platform;
+        p.live.className = `live ${late || early ? "late" : "ok"}`;
+      }
+      const prev = parts[i - 1];
+      if (prev?.liveInfo && !prev.liveInfo.cancelled) {
+        const reach = prev.leg[6] + prev.liveInfo.delay;
+        const leaves = p.leg[5] + (info.cancelled ? 0 : info.delay);
+        if (reach >= leaves) riskText = "Coincidenza a rischio";
+      }
+    });
+    risk.textContent = riskText;
+  });
+}
+
+async function refreshLive() {
+  const bar = $("livebar");
+  if (!window.LIVE_URL) { bar.textContent = ""; return; }
+  const parts = trackable();
+  if (!parts.length) {
+    bar.textContent = liveDate === localToday() ? "Nessuna partenza nelle prossime 2 ore da seguire in tempo reale." : "Il tempo reale è disponibile solo per oggi.";
+    paintLive();
+    return;
+  }
+  const byMode = (f) => [...new Set(parts.map(f).filter(Boolean))];
+  const stringsOf = new Map(liveTrips.flatMap((t) => t.parts.map((p) => [p, t.s])));
+  const bus = byMode((p) => (p.leg[0] === 0 ? null : p.leg[7])).slice(0, 12);
+  const train = byMode((p) => (p.leg[0] === 0 ? stringsOf.get(p)[p.leg[3]] : null)).slice(0, 6);
+  try {
+    const q = new URLSearchParams({ bus: bus.join(","), train: train.join("|") });
+    const r = await fetch(`${window.LIVE_URL}/live?${q}`);
+    if (!r.ok) throw new Error("live");
+    const data = await r.json();
+    liveData = { bus: data.bus || {}, train: data.train || {} };
+    paintLive();
+    const failed = [...Object.values(liveData.bus), ...Object.values(liveData.train)].filter((v) => v === null).length;
+    const at = new Date(data.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    bar.textContent = `Tempo reale aggiornato alle ${at}${failed ? ". Alcune fermate non hanno risposto" : ""}. Dove non c'è l'indicazione vale l'orario programmato.`;
+  } catch {
+    bar.textContent = "Tempo reale non disponibile: stai vedendo gli orari programmati.";
+  }
 }
 
 async function init() {
@@ -309,12 +418,14 @@ async function init() {
   if (savedTime) $("time").value = savedTime;
 
   const when = new Date(index.generated).toLocaleDateString("it-IT", { day: "numeric", month: "long" });
-  $("foot").textContent = `Orari ufficiali AMT e Trenitalia, aggiornati il ${when}. Sono orari programmati: scioperi, ritardi e deviazioni non sono inclusi. Tratti a piedi stimati a passo tranquillo.`;
+  $("foot").textContent = `Orari ufficiali AMT e Trenitalia, aggiornati il ${when}. Per le prossime 2 ore di oggi, ritardi e passaggi previsti arrivano da AMT e ViaggiaTreno. Tratti a piedi stimati a passo tranquillo.`;
 
   $("form").addEventListener("change", render);
   $("time").addEventListener("input", render);
   $("form").addEventListener("submit", (e) => e.preventDefault());
   render();
+  setInterval(() => { if (!document.hidden) refreshLive(); }, REFRESH_MS);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshLive(); });
 }
 init();
 </script>

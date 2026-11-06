@@ -126,6 +126,11 @@ class BuildTest(unittest.TestCase):
         for prev, nxt in zip(j[3], j[3][1:]):
             self.assertGreaterEqual(nxt[5] - prev[6], b.CHANGE_MARGIN["bus"])
 
+    def test_codice_fermata_per_il_live(self):
+        j = self.day["od"]["casa>kennedy"]["misto"][0]
+        self.assertEqual(j[3][1][7], "BRG")
+        self.assertEqual(j[3][0][7], "")
+
     def test_orari_coerenti(self):
         for classes in self.day["od"].values():
             for items in classes.values():
