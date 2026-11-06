@@ -25,7 +25,7 @@ codici fermata: ['']
 esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
 
 # Prova ponte live
-{"bus":{"0075":[{"line":"3","dest":"PRINCIPE FS","time":"11:27","min":3},{"line":"1","dest":"CARICAMENTO","time":"11:29","min":5},{"line":"172","dest":"SESTRI","time":"11:32","min":8},{"line":"1","dest":"CARICAMENTO","time":"11:39","min":15},{"line":"159","dest":"SESTRI","time":"11:40","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:45","min":21},{"line":"1","dest":"CARICAMENTO","time":"11:51","min":27},{"line":"128","dest":"ERZELLI","time":"11:51","min":28}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-06T10:24:21.333Z"}
+{"bus":{"0075":[{"line":"3","dest":"PRINCIPE FS","time":"11:28","min":null},{"line":"1","dest":"CARICAMENTO","time":"11:29","min":2},{"line":"172","dest":"SESTRI","time":"11:32","min":5},{"line":"1","dest":"CARICAMENTO","time":"11:38","min":11},{"line":"159","dest":"SESTRI","time":"11:40","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:45","min":18},{"line":"1","dest":"CARICAMENTO","time":"11:51","min":24},{"line":"128","dest":"ERZELLI","time":"11:51","min":24}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-06T10:27:28.872Z"}
 # Prova ViaggiaTreno
 URL http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/GENOVA%20SESTRI
 GENOVA SESTRI PONENTE AEROPORTO|S04537
