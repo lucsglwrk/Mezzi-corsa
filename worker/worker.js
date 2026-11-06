@@ -66,21 +66,33 @@ export function parseTrains(json) {
   }));
 }
 
+// ViaggiaTreno e' solo http: niente Cache API, basta una memoria breve nel Worker.
+const memory = new Map();
+async function plain(url, ttl) {
+  const hit = memory.get(url);
+  if (hit && hit.until > Date.now()) return hit.text;
+  const res = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`ViaggiaTreno ${res.status}: ${text.slice(0, 120)}`);
+  memory.set(url, { text, until: Date.now() + ttl * 1000 });
+  return text;
+}
+
 async function bus(code) {
   return parseBus(await cached(AMT + code));
 }
 
 async function train(name) {
-  const list = await cached(`${VT}/autocompletaStazione/${encodeURIComponent(name)}`, 86400);
+  const list = await plain(`${VT}/autocompletaStazione/${encodeURIComponent(name)}`, 86400);
   const code = parseStationCode(list, name);
   if (!code) throw new Error("stazione non trovata");
   const when = encodeURIComponent(romeDate());
-  return parseTrains(JSON.parse(await cached(`${VT}/partenze/${code}/${when}`)));
+  return parseTrains(JSON.parse(await plain(`${VT}/partenze/${code}/${when}`, TTL)));
 }
 
-async function collect(keys, load) {
+async function collect(keys, load, errors) {
   const entries = await Promise.all(keys.map(async (k) => {
-    try { return [k, await load(k)]; } catch { return [k, null]; }
+    try { return [k, await load(k)]; } catch (e) { errors[k] = String(e.message || e); return [k, null]; }
   }));
   return Object.fromEntries(entries);
 }
@@ -97,8 +109,9 @@ export async function handle(request) {
   }
   const buses = (url.searchParams.get("bus") || "").split(",").filter((c) => /^\d{1,5}$/.test(c)).slice(0, MAX_BUS);
   const trains = (url.searchParams.get("train") || "").split("|").filter((n) => /^[A-Z0-9' .-]{3,40}$/.test(n)).slice(0, MAX_TRAIN);
-  const [bus_, train_] = await Promise.all([collect(buses, bus), collect(trains, train)]);
-  return new Response(JSON.stringify({ bus: bus_, train: train_, at: new Date().toISOString() }), { headers: cors });
+  const errors = {};
+  const [bus_, train_] = await Promise.all([collect(buses, bus, errors), collect(trains, train, errors)]);
+  return new Response(JSON.stringify({ bus: bus_, train: train_, errors, at: new Date().toISOString() }), { headers: cors });
 }
 
 export default { fetch: handle };

@@ -31,6 +31,7 @@ test("risponde solo con parametri validi e isola i guasti", async () => {
   const j = await r.json();
   assert.equal(j.bus["0001"].length, 2);
   assert.equal(j.bus["0002"], null);
+  assert.match(j.errors["0002"], /500/);
   assert.equal(calls.length, 2);
   assert.equal((await handle(new Request("https://x.dev/altro"))).status, 404);
 });
