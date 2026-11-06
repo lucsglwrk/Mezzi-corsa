@@ -31,6 +31,15 @@ jobs:
           node --test tests/worker.test.mjs
       - name: Scarica gli orari e calcola i percorsi
         run: python scripts/build_data.py --out site/data --report report.txt
+      - name: Prova il ponte live
+        continue-on-error: true
+        run: |
+          echo "" >> report.txt
+          echo "# Prova ponte live" >> report.txt
+          curl -sS -m 40 -G "https://mezzi-corsa.luca-saglia-work.workers.dev/live" \
+            --data-urlencode "bus=0075" \
+            --data-urlencode "train=GENOVA SESTRI PONENTE|GENOVA BRIGNOLE" | head -c 3000 >> report.txt
+          echo "" >> report.txt
       - name: Salva il rapporto
         run: |
           git config user.name "github-actions[bot]"
