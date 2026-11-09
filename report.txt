@@ -6,7 +6,7 @@ Sturla: 44.39798, 8.98147, 35 fermate: BRIGATA SALERNO/ERA, CAPRERA/ORSINI, CAVA
 Piazzale Kennedy: 44.39450, 8.94550, 47 fermate: BARABINO 1/PALERMO, BARABINO 2/TORINO, BARABINO 3/CIPRO, BARABINO/TORINO, BATTISTI/SCUOLE, BRIGATA BISAGNO 1/BARABINO, BRIGATE PARTIGIANE 1/DIAZ, BRIGATE PARTIGIANE 1/GESTRO, BRIGATE PARTIGIANE 2/CECCHI, BRIGATE PARTIGIANE 2/RUSPOLI, DIAZ/BRIGATE PARTIGIANE, GENOVA BRIGNOLE, ITALIA 1/PUNTA VAGNO, ITALIA 2/PIAVE
 Quarto: 44.38861, 8.99598, 15 fermate: CARRARA 1/V MAGGIO, CARRARA 5/V MAGGIO, GENOVA QUARTO DEI MILLE, QUARTO 1/PRIARUGGIA, QUARTO 2/CAPO SAN ROCCO, QUARTO 2/QUARTARA, QUARTO 3/CAPO SAN ROCCO, QUARTO 3/QUARTARA, V MAGGIO 1/PRIARUGGIA, V MAGGIO 2/CARRARA, V MAGGIO 2/QUARTO FS, V MAGGIO 3/VILLA CARRARA, V MAGGIO 4/CARRARA, V MAGGIO 4/QUARTO FS
 
-casa>sturla: bus: 66, misto: 11, treno: 52
+casa>sturla: bus: 65, misto: 11, treno: 52
 sturla>casa: bus: 87, misto: 13, treno: 49
 casa>kennedy: bus: 154, misto: 61, treno: 70
 kennedy>casa: bus: 138, misto: 86, treno: 66
@@ -25,4 +25,4 @@ codici fermata: ['']
 esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
 
 # Prova ponte live
-{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"11:39","min":5},{"line":"159","dest":"SESTRI","time":"11:40","min":null},{"line":"3","dest":"PRINCIPE FS","time":"11:46","min":11},{"line":"1","dest":"CARICAMENTO","time":"11:52","min":17},{"line":"128","dest":"ERZELLI","time":"11:53","min":18},{"line":"1","dest":"CARICAMENTO","time":"11:59","min":25},{"line":"172","dest":"SESTRI","time":"12:00","min":26},{"line":"159","dest":"SESTRI","time":"12:02","min":28}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-06T10:34:59.953Z"}
+{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"12:51","min":3},{"line":"159","dest":"SESTRI","time":"13:00","min":12},{"line":"172","dest":"SESTRI","time":"13:00","min":12},{"line":"1","dest":"CARICAMENTO","time":"13:14","min":26}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"at":"2026-11-09T11:48:28.031Z"}
