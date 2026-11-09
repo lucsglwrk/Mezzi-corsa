@@ -32,6 +32,9 @@ jobs:
           node --test tests/router.test.mjs
       - name: Scarica gli orari e calcola i percorsi
         run: python scripts/build_data.py --out site/data --report report.txt
+      - name: Prova la scheda Viaggio
+        continue-on-error: true
+        run: node scripts/prova_viaggio.mjs >> report.txt
       - name: Prova il ponte live
         continue-on-error: true
         run: |
