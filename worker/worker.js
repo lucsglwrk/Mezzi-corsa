@@ -2,7 +2,7 @@
 const ALLOWED_ORIGIN = "https://lucsglwrk.github.io";
 const VT = "http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno";
 const AMT = "https://www.amt.genova.it/amt/servizi/passaggi_i.php?CodiceFermata=";
-const MAX_BUS = 12;
+const MAX_BUS = 20;
 const MAX_TRAIN = 6;
 const TTL = 20;
 

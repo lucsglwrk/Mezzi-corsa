@@ -97,6 +97,8 @@ class BuildTest(unittest.TestCase):
         cls.index = json.loads((out / "index.json").read_text(encoding="utf-8"))
         key = cls.index["dates"][DATE.isoformat()]["day"]
         cls.day = json.loads((out / "days" / f"{key}.json").read_text(encoding="utf-8"))
+        net_key = cls.index["dates"][DATE.isoformat()]["net"]
+        cls.net = json.loads((out / "net" / f"{net_key}.json").read_text(encoding="utf-8"))
 
     @classmethod
     def tearDownClass(cls):
@@ -130,6 +132,18 @@ class BuildTest(unittest.TestCase):
         j = self.day["od"]["casa>kennedy"]["misto"][0]
         self.assertEqual(j[3][1][7], "BRG")
         self.assertEqual(j[3][0][7], "")
+
+    def test_rete_per_il_viaggio(self):
+        names = [s[0] for s in self.net["stops"]]
+        self.assertIn("Genova Sturla", names)
+        self.assertEqual(len(self.net["foot"]), len(names))
+        mode, line, head, seq, deltas, labels = next(
+            p for p in self.net["pats"] if p[0] == 0 and names[p[3][0]] == "Genova Sestri Ponente")
+        self.assertEqual(len(deltas) % len(seq), 0)
+        self.assertEqual(len(labels), len(deltas) // len(seq))
+        self.assertEqual(deltas[:4], [360, 20, 4, 3])
+        bus = next(p for p in self.net["pats"] if p[1] == "1" and names[p[3][0]].startswith("Menotti"))
+        self.assertEqual(self.net["stops"][bus[3][0]][3], "MEN")
 
     def test_orari_coerenti(self):
         for classes in self.day["od"].values():

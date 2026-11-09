@@ -8,6 +8,7 @@ Solo libreria standard. Limite voluto: al massimo due cambi.
 """
 import argparse
 import bisect
+import copy
 import csv
 import datetime as dt
 import hashlib
@@ -32,6 +33,7 @@ RAIL_FALLBACK = ("https://srvcarto.regione.liguria.it/dtuff/download_statico/ope
 UA = {"User-Agent": "mezzi-corsa/1.0"}
 
 BOX = (44.36, 44.46, 8.78, 9.03)  # Sestri-Quarto, lungo la costa
+WIDE_BOX = (44.36, 44.56, 8.70, 9.12)  # tutta Genova, per la scheda Viaggio
 WALK_M_PER_MIN = 75.0             # passo tranquillo
 ROAD_FACTOR = 1.3                 # strada reale rispetto alla linea d'aria
 TRANSFER_RADIUS_M = 300
@@ -108,7 +110,7 @@ def rows(z, name):
 class Feed:
     """Parte utile di un feed: fermate nel riquadro e corse che vi passano."""
 
-    def __init__(self, data, prefix, modes):
+    def __init__(self, data, prefix, modes, box=BOX):
         z = zipfile.ZipFile(io.BytesIO(data))
         self.prefix = prefix
         self.stops = {}
@@ -116,7 +118,7 @@ class Feed:
         for r in rows(z, "stops.txt"):
             if r.get("stop_lat") and r.get("stop_lon"):
                 pos = (float(r["stop_lat"]), float(r["stop_lon"]))
-                if BOX[0] <= pos[0] <= BOX[1] and BOX[2] <= pos[1] <= BOX[3]:
+                if box[0] <= pos[0] <= box[1] and box[2] <= pos[1] <= box[3]:
                     self.stops[prefix + r["stop_id"]] = (r["stop_name"].strip(), pos)
                     self.codes[prefix + r["stop_id"]] = (r.get("stop_code") or r["stop_id"]).strip()
         self.routes = {}
@@ -126,10 +128,12 @@ class Feed:
                 label = (r.get("route_short_name") or r.get("route_long_name") or "").strip()
                 self.routes[r["route_id"]] = (mode, label)
         self.trips = {}
+        self.base = {}
         for r in rows(z, "trips.txt"):
             route = self.routes.get(r["route_id"])
             if route:
                 mode, label = route
+                self.base[prefix + r["trip_id"]] = label
                 if mode == "train" and r.get("trip_short_name"):
                     label = f"{label} {r['trip_short_name']}".strip()
                 self.trips[prefix + r["trip_id"]] = (
@@ -163,6 +167,50 @@ class Feed:
     def trips_on(self, date):
         services = self.active(date)
         return {t for t in self.times if self.trips[t][0] in services}
+
+
+def narrow(feed, box):
+    """Stesso feed, limitato alle fermate dentro un riquadro più piccolo."""
+    out = copy.copy(feed)
+    out.stops = {k: v for k, v in feed.stops.items()
+                 if box[0] <= v[1][0] <= box[1] and box[2] <= v[1][1] <= box[3]}
+    out.times = {}
+    for trip, seq in feed.times.items():
+        kept = [c for c in seq if c[1] in out.stops]
+        if len(kept) >= 2:
+            out.times[trip] = kept
+    return out
+
+
+def network(feeds, today):
+    """Rete compatta di un giorno, per il calcolo dei percorsi nel browser."""
+    stops, codes, trips, times, base = {}, {}, {}, {}, {}
+    for f in feeds:
+        stops.update(f.stops), codes.update(f.codes), trips.update(f.trips)
+        times.update(f.times), base.update(f.base)
+    used = sorted({c[1] for t in today for c in times[t]})
+    idx = {s: n for n, s in enumerate(used)}
+    modes = {"train": 0, "bus": 1, "metro": 2}
+    pats = defaultdict(list)
+    for t in today:
+        _, mode, label, head = trips[t]
+        seq = times[t]
+        key = (modes[mode], base[t], head, tuple(idx[c[1]] for c in seq))
+        pats[key].append(([c[3] for c in seq], label))
+    out = []
+    for (mode, line, head, seq), runs in sorted(pats.items()):
+        runs.sort(key=lambda r: r[0])
+        deltas = []
+        for run, _ in runs:
+            deltas.append(run[0])
+            deltas.extend(max(0, b - a) for a, b in zip(run, run[1:]))
+        out.append([mode, line, head, list(seq), deltas,
+                    [label for _, label in runs] if mode == 0 else 0])
+    xfer = transfer_map({s: stops[s] for s in used})
+    foot = [[v for other, w in xfer.get(s, ()) if other != s for v in (idx[other], w)] for s in used]
+    table = [[stops[s][0], round(stops[s][1][0], 5), round(stops[s][1][1], 5),
+              "" if s.startswith("t:") else codes.get(s, ""), int(s.startswith("t:"))] for s in used]
+    return {"stops": table, "foot": foot, "pats": out}
 
 
 def find_points(stops, words, near=None):
@@ -390,8 +438,9 @@ def fmt(m):
 
 
 def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=None):
-    amt = Feed(amt_data, "a:", {"3": "bus", "1": "metro"})
-    rail = Feed(rail_data, "t:", {"2": "train"})
+    amt_wide = Feed(amt_data, "a:", {"3": "bus", "1": "metro"}, WIDE_BOX)
+    rail_wide = Feed(rail_data, "t:", {"2": "train"}, WIDE_BOX)
+    amt, rail = narrow(amt_wide, BOX), narrow(rail_wide, BOX)
     stops = {**amt.stops, **rail.stops}
     CODES.update(amt.codes)
     rail_ids = set(rail.stops)
@@ -420,6 +469,8 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
     if out.exists():
         shutil.rmtree(out)
     (out / "days").mkdir(parents=True)
+    (out / "net").mkdir()
+    nets = {}
 
     start = start or dt.date.today()
     dates, cache = {}, {}
@@ -439,7 +490,15 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
                 json.dumps(compact(day), ensure_ascii=False, separators=(",", ":")),
                 encoding="utf-8")
             cache[key] = day
-        dates[date.isoformat()] = {"day": key, "trains": bool(r_trips), "buses": bool(a_trips)}
+        wide = amt_wide.trips_on(date) | rail_wide.trips_on(date)
+        net_key = hashlib.sha1("\n".join(sorted(wide)).encode()).hexdigest()[:12]
+        if net_key not in nets:
+            text = json.dumps(network([amt_wide, rail_wide], wide), ensure_ascii=False,
+                              separators=(",", ":"))
+            (out / "net" / f"{net_key}.json").write_text(text, encoding="utf-8")
+            nets[net_key] = len(text.encode())
+        dates[date.isoformat()] = {"day": key, "net": net_key,
+                                   "trains": bool(r_trips), "buses": bool(a_trips)}
 
     if not dates:
         raise SystemExit("Nessuna corsa valida nei prossimi giorni: orari scaduti?")
@@ -456,6 +515,8 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
                                for l in j["legs"])
             report.append(f"codici fermata: {[l['code'] for l in j['legs']]}")
             report.append(f"esempio {cls}: esci {fmt(j['leave'])}, arrivi {fmt(j['arrive'])}: {parts}")
+    report.append(f"reti per la scheda Viaggio: {len(nets)} file, "
+                  f"{sum(nets.values()) // 1024} KB in tutto, il più grande {max(nets.values()) // 1024} KB")
     no_rail = [d for d, v in dates.items() if not v["trains"]]
     if no_rail:
         report.append(f"ATTENZIONE: nessun treno negli orari dal {no_rail[0]}")

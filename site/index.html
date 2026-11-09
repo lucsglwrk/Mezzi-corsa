@@ -29,6 +29,7 @@
   }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   background: var(--bg); color: var(--fg); font: 400 16px/1.4 var(--body);
@@ -74,6 +75,19 @@ section.dir { display: grid; gap: 12px; min-width: 0; }
 .live.ok { color: var(--ok); } .live.late, .risk { color: var(--late); } .live.gone { color: var(--train); }
 .risk { font-size: 13px; font-weight: 600; }
 .livebar { color: var(--muted); font-size: 13px; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+.tabs button { font: 700 18px var(--display); letter-spacing: .03em; text-transform: uppercase; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.ac { position: relative; }
+.ac input { width: 100%; height: 46px; font: 500 16px var(--body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; }
+.ac input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sugg { position: absolute; z-index: 5; left: 0; right: 0; top: 50px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; box-shadow: 0 6px 18px rgb(0 0 0 / .18); }
+.sugg button { display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 10px 12px; font: 500 15px var(--body); color: var(--fg); cursor: pointer; }
+.sugg button:last-child { border-bottom: 0; }
+.sugg button small { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
+.sugg button:hover, .sugg button:focus-visible { background: var(--bg); outline: 0; }
+.swap { justify-self: start; background: none; border: 1px solid var(--line); border-radius: 8px; color: var(--accent); font: 600 14px var(--body); padding: 6px 12px; cursor: pointer; }
+.walk { color: var(--muted); font-size: 13px; }
 .check { font-size: 14px; color: var(--accent); font-weight: 600; }
 footer { color: var(--muted); font-size: 13px; }
 </style>
@@ -82,7 +96,11 @@ footer { color: var(--muted); font-size: 13px; }
 <main>
   <header>
     <h1>Mezzi Corsa</h1>
-    <p class="sub">Da via Menotti al punto di partenza, e ritorno</p>
+    <p class="sub" id="sub">Da via Menotti al punto di partenza, e ritorno</p>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-corsa" aria-selected="true">Corsa</button>
+      <button type="button" role="tab" id="tab-viaggio" aria-selected="false">Viaggio</button>
+    </div>
   </header>
 
   <form id="form">
@@ -96,6 +114,22 @@ footer { color: var(--muted); font-size: 13px; }
     </div>
   </form>
 
+  <form id="vform" hidden>
+    <div>
+      <label class="f" for="v-from">Da</label>
+      <div class="ac"><input id="v-from" type="text" autocomplete="off" placeholder="La mia posizione"><div class="sugg" id="v-from-list" hidden></div></div>
+    </div>
+    <button type="button" class="swap" id="v-swap">Inverti partenza e arrivo</button>
+    <div>
+      <label class="f" for="v-to">A</label>
+      <div class="ac"><input id="v-to" type="text" autocomplete="off" placeholder="Via, fermata o luogo"><div class="sugg" id="v-to-list" hidden></div></div>
+    </div>
+    <div class="when">
+      <div><label class="f" for="v-date">Giorno</label><select id="v-date"></select></div>
+      <div><label class="f" for="v-time">Parto alle</label><input id="v-time" type="time"></div>
+    </div>
+  </form>
+
   <div class="notice" id="notice" role="status"></div>
   <div class="livebar" id="livebar" aria-live="polite"></div>
   <div class="results" id="results"></div>
@@ -103,6 +137,7 @@ footer { color: var(--muted); font-size: 13px; }
 </main>
 
 <script src="live-config.js"></script>
+<script src="router.js"></script>
 <script>
 const CLASSES = [["treno", "Solo treno"], ["bus", "Solo bus e metro"], ["misto", "Treno + bus"]];
 const LIMIT = 5;
@@ -181,8 +216,11 @@ function tripEl(j, s, labels) {
   dur.textContent = `${arrive - leave} min${changes ? ` · ${changes} ${changes === 1 ? "cambio" : "cambi"}` : ""}`;
   head.append(times, dur);
   el.append(head);
+  const note = (text) => { const d = document.createElement("div"); d.className = "walk"; d.textContent = text; el.append(d); };
+  if (j[4]?.in) note(j[4].in);
   const parts = legs.map((l) => ({ leg: l, ...legEl(l, s, LEG) }));
   parts.forEach((p) => el.append(p.el));
+  if (j[4]?.out) note(j[4].out);
   const risk = document.createElement("div");
   risk.className = "risk";
   el.append(risk);
@@ -247,8 +285,12 @@ function sectionEl(title, hint, groups, a, b) {
   return sec;
 }
 
-async function render() {
+function render() {
   if (!index) return;
+  return tab === "viaggio" ? renderViaggio() : renderCorsa();
+}
+
+async function renderCorsa() {
   const place = document.querySelector("input[name=place]:checked").value;
   const date = $("date").value;
   const target = toMin($("time").value || "18:30");
@@ -364,9 +406,10 @@ async function refreshLive() {
     paintLive();
     return;
   }
+  parts.sort((a, b) => a.leg[5] - b.leg[5]);
   const byMode = (f) => [...new Set(parts.map(f).filter(Boolean))];
   const stringsOf = new Map(liveTrips.flatMap((t) => t.parts.map((p) => [p, t.s])));
-  const bus = byMode((p) => (p.leg[0] === 0 ? null : p.leg[7])).slice(0, 12);
+  const bus = byMode((p) => (p.leg[0] === 0 ? null : p.leg[7])).slice(0, 20);
   const train = byMode((p) => (p.leg[0] === 0 ? stringsOf.get(p)[p.leg[3]] : null)).slice(0, 6);
   try {
     const q = new URLSearchParams({ bus: bus.join(","), train: train.join("|") });
@@ -375,12 +418,209 @@ async function refreshLive() {
     const data = await r.json();
     liveData = { bus: data.bus || {}, train: data.train || {} };
     paintLive();
-    const failed = [...Object.values(liveData.bus), ...Object.values(liveData.train)].filter((v) => v === null).length;
+    const busDown = Object.values(liveData.bus).some((v) => v === null);
+    const trainDown = Object.values(liveData.train).some((v) => v === null);
     const at = new Date(data.at).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-    bar.textContent = `Tempo reale aggiornato alle ${at}${failed ? ". Alcune fermate non hanno risposto" : ""}. Dove non c'è l'indicazione vale l'orario programmato.`;
+    bar.textContent = `Tempo reale aggiornato alle ${at}${busDown ? ". Alcune fermate bus non hanno risposto" : ""}${trainDown ? ". Ritardi dei treni non disponibili" : ""}. Dove non c'è l'indicazione vale l'orario programmato.`;
   } catch {
     bar.textContent = "Tempo reale non disponibile: stai vedendo gli orari programmati.";
   }
+}
+
+// ---------- Scheda Viaggio ----------
+const AREA = [8.70, 44.36, 9.12, 44.56]; // lon/lat min, lon/lat max: stessa area degli orari
+const SEARCH_WINDOW = 120;
+const netCache = {};
+let tab = "corsa";
+let vFrom = null; // null = posizione attuale
+let vTo = null;
+let vTimeTouched = false;
+let vRun = 0;
+let lastFix = null;
+
+async function loadNet(key) {
+  if (!netCache[key]) {
+    const r = await fetch(`data/net/${key}.json`);
+    if (!r.ok) throw new Error("net");
+    netCache[key] = Router.prepare(await r.json());
+  }
+  return netCache[key];
+}
+
+function position() {
+  if (lastFix && Date.now() - lastFix.at < 60000) return Promise.resolve(lastFix);
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error("geo")); return; }
+    navigator.geolocation.getCurrentPosition((p) => {
+      lastFix = { lat: p.coords.latitude, lon: p.coords.longitude, label: "La mia posizione", at: Date.now() };
+      resolve(lastFix);
+    }, reject, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  });
+}
+
+const plainText = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+function savedPlaces() {
+  return Object.values(index.places).map((p) => ({ label: p.name, sub: "Luogo salvato", lat: p.pos[0], lon: p.pos[1] }));
+}
+
+function stopMatches(net, query) {
+  const q = plainText(query), groups = new Map();
+  net.stops.forEach((st) => {
+    const name = plainText(st.name);
+    if (!name.includes(q)) return;
+    const gkey = `${name}|${st.rail}`;
+    const cur = groups.get(gkey) || { label: st.name, sub: st.rail ? "Stazione" : "Fermata", lat: 0, lon: 0, n: 0, first: name.startsWith(q) };
+    cur.lat += st.lat; cur.lon += st.lon; cur.n++;
+    groups.set(gkey, cur);
+  });
+  return [...groups.values()].map((x) => ({ ...x, lat: x.lat / x.n, lon: x.lon / x.n }))
+    .sort((a, b) => (b.sub === "Stazione") - (a.sub === "Stazione") || b.first - a.first || a.label.length - b.label.length).slice(0, 4);
+}
+
+async function addressMatches(query, signal) {
+  const q = new URLSearchParams({ q: query, limit: "6", bbox: AREA.join(","), lat: "44.41", lon: "8.93" });
+  const r = await fetch(`https://photon.komoot.io/api/?${q}`, { signal });
+  if (!r.ok) throw new Error("geocoder");
+  const seen = new Set();
+  return (await r.json()).features.map((f) => {
+    const p = f.properties, [lon, lat] = f.geometry.coordinates;
+    const street = [p.street, p.housenumber].filter(Boolean).join(" ");
+    const label = p.name || street;
+    const sub = [p.name && street, p.district || p.locality, p.city].filter(Boolean).join(", ");
+    return { label, sub, lat, lon };
+  }).filter((x) => x.label && x.lon >= AREA[0] && x.lon <= AREA[2] && x.lat >= AREA[1] && x.lat <= AREA[3]
+    && !seen.has(`${x.label}|${x.sub}`) && seen.add(`${x.label}|${x.sub}`)).slice(0, 5);
+}
+
+function setupField(input, list, isFrom) {
+  let timer = 0, abort = null;
+  const pick = (item) => {
+    if (isFrom) vFrom = item; else vTo = item;
+    input.value = item ? item.label : "";
+    list.hidden = true;
+    render();
+  };
+  const show = (items) => {
+    list.replaceChildren(...items.map((item) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = item.label;
+      if (item.sub) { const s = document.createElement("small"); s.textContent = item.sub; b.append(s); }
+      b.addEventListener("pointerdown", (e) => e.preventDefault());
+      b.addEventListener("click", () => pick(item.here ? null : item));
+      return b;
+    }));
+    list.hidden = !items.length;
+  };
+  const defaults = () => (isFrom ? [{ label: "La mia posizione", sub: "Usa il GPS del telefono", here: true }] : []).concat(savedPlaces());
+  const update = () => {
+    const query = input.value.trim();
+    clearTimeout(timer);
+    abort?.abort();
+    if (query.length < 2) { show(defaults()); return; }
+    const info = index.dates[$("v-date").value];
+    const local = netCache[info?.net] ? stopMatches(netCache[info.net], query) : [];
+    const saved = savedPlaces().filter((p) => plainText(p.label).includes(plainText(query)));
+    show(saved.concat(local));
+    if (query.length < 3) return;
+    timer = setTimeout(async () => {
+      abort = new AbortController();
+      try {
+        const found = await addressMatches(query, abort.signal);
+        if (input.value.trim() === query) show(saved.concat(local, found));
+      } catch { /* senza rete o servizio fermo: restano fermate e luoghi salvati */ }
+    }, 350);
+  };
+  input.addEventListener("input", () => { if (isFrom) vFrom = undefined; else vTo = null; update(); });
+  input.addEventListener("focus", () => { input.select(); update(); });
+  input.addEventListener("blur", () => setTimeout(() => {
+    list.hidden = true;
+    if (isFrom && vFrom === undefined) { vFrom = null; input.value = ""; render(); }
+    if (!isFrom && !vTo && input.value) { input.value = ""; render(); }
+  }, 150));
+  return pick;
+}
+
+function message(text) {
+  const p = document.createElement("p");
+  p.className = "empty";
+  p.textContent = text;
+  $("results").replaceChildren(p);
+}
+
+async function renderViaggio() {
+  const run = ++vRun;
+  liveTrips = [];
+  $("livebar").textContent = "";
+  $("notice").textContent = "";
+  if (!vTimeTouched) $("v-time").value = hhmm(nowMin());
+  const date = $("v-date").value, info = index.dates[date];
+  liveDate = date;
+  if (!vTo) { message("Scegli la destinazione per vedere i mezzi disponibili."); return; }
+  if (!info.net) { message("Per questo giorno la rete non è ancora disponibile. Riprova dopo il prossimo aggiornamento."); return; }
+  message("Calcolo dei percorsi…");
+
+  let from, net;
+  try {
+    from = vFrom || await position();
+  } catch {
+    if (run !== vRun) return;
+    $("notice").textContent = "Non riesco a leggere la tua posizione. Consenti l'accesso alla posizione nel browser oppure scrivi il punto di partenza.";
+    message("Manca il punto di partenza.");
+    return;
+  }
+  try {
+    net = await loadNet(info.net);
+  } catch {
+    if (run !== vRun) return;
+    $("notice").textContent = "Non riesco a caricare gli orari. Controlla la connessione e riprova.";
+    message("");
+    return;
+  }
+  if (run !== vRun) return;
+  await new Promise((r) => setTimeout(r, 0));
+
+  const depart = toMin($("v-time").value || hhmm(nowMin()));
+  const direct = Router.meters(from.lat, from.lon, vTo.lat, vTo.lon);
+  const outside = (p) => p.lon < AREA[0] || p.lon > AREA[2] || p.lat < AREA[1] || p.lat > AREA[3];
+  const warn = [];
+  if (outside(from)) warn.push("Il punto di partenza è fuori dall'area coperta (Genova).");
+  if (outside(vTo)) warn.push("La destinazione è fuori dall'area coperta (Genova).");
+  if (!info.trains) warn.push("Per questo giorno non sono ancora pubblicati gli orari dei treni.");
+  if (!info.buses) warn.push("Per questo giorno non sono ancora pubblicati gli orari AMT.");
+  $("notice").textContent = warn.join(" ");
+
+  const found = Router.plan(net, from, vTo, depart, SEARCH_WINDOW);
+  if (run !== vRun) return;
+  const s = [];
+  const add = (v) => s.push(v) - 1;
+  const item = (j) => [j.leave, j.arrive, j.walkIn, j.legs.map((l) => [l.mode, add(l.line), add(l.head), add(net.stops[l.from].name), add(net.stops[l.to].name), l.dep, l.arr, net.stops[l.from].code]), {
+    in: `${j.walkIn} min a piedi fino a ${net.stops[j.legs[0].from].name}`,
+    out: `poi ${j.walkOut} min a piedi`,
+  }];
+  liveTrips = [];
+  const groups = CLASSES.map(([c, t]) => groupEl(c, t, found[c].map(item), s, ["parti", "arrivi"]));
+  const walk = Router.walkMin(direct);
+  const hint = `Partenze tra le ${hhmm(depart)} e le ${hhmm(depart + SEARCH_WINDOW)}.` + (walk <= 40 ? ` A piedi sono circa ${walk} minuti.` : "");
+  const coord = (p) => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
+  $("results").replaceChildren(sectionEl(`${vFrom ? `Da ${from.label}` : "Dalla tua posizione"} a ${vTo.label}`, hint, groups, coord(from), coord(vTo)));
+  refreshLive();
+}
+
+function showTab(name) {
+  tab = name === "viaggio" ? "viaggio" : "corsa";
+  $("form").hidden = tab !== "corsa";
+  $("vform").hidden = tab !== "viaggio";
+  $("tab-corsa").setAttribute("aria-selected", String(tab === "corsa"));
+  $("tab-viaggio").setAttribute("aria-selected", String(tab === "viaggio"));
+  $("sub").textContent = tab === "corsa" ? "Da via Menotti al punto di partenza, e ritorno" : "Da dove sei a dove vuoi, con i mezzi di Genova";
+  try { history.replaceState(null, "", tab === "viaggio" ? "#viaggio" : location.pathname + location.search); } catch { /* anteprime senza cronologia */ }
+  if (tab === "viaggio" && index) {
+    const info = index.dates[$("v-date").value];
+    if (info?.net) loadNet(info.net).catch(() => {});
+  }
+  render();
 }
 
 async function init() {
@@ -414,6 +654,7 @@ async function init() {
     return;
   }
   $("date").replaceChildren(...dates.map((d) => new Option(dateLabel(d, today), d)));
+  $("v-date").replaceChildren(...dates.map((d) => new Option(dateLabel(d, today), d)));
   const savedTime = store("time");
   if (savedTime) $("time").value = savedTime;
 
@@ -423,7 +664,22 @@ async function init() {
   $("form").addEventListener("change", render);
   $("time").addEventListener("input", render);
   $("form").addEventListener("submit", (e) => e.preventDefault());
-  render();
+  $("vform").addEventListener("submit", (e) => e.preventDefault());
+  const pickFrom = setupField($("v-from"), $("v-from-list"), true);
+  const pickTo = setupField($("v-to"), $("v-to-list"), false);
+  $("v-date").addEventListener("change", render);
+  $("v-time").addEventListener("input", () => { vTimeTouched = true; render(); });
+  $("v-swap").addEventListener("click", async () => {
+    const a = vFrom, b = vTo;
+    let here = null;
+    if (!a && b) { try { here = await position(); } catch { here = null; } }
+    vFrom = b; $("v-from").value = b ? b.label : "";
+    vTo = a || here; $("v-to").value = vTo ? vTo.label : "";
+    render();
+  });
+  $("tab-corsa").addEventListener("click", () => showTab("corsa"));
+  $("tab-viaggio").addEventListener("click", () => showTab("viaggio"));
+  showTab(location.hash === "#viaggio" ? "viaggio" : "corsa");
   setInterval(() => { if (!document.hidden) refreshLive(); }, REFRESH_MS);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshLive(); });
 }

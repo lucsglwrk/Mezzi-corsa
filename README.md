@@ -2,6 +2,8 @@
 
 Web app per telefono: scegli dove corri, il giorno e l'ora in cui devi essere lì. Ti mostra come arrivare da via Menotti (Sestri Ponente) e come tornare a casa nella fascia da 1 a 4 ore dopo, divisi tra solo treno, solo bus e treno + bus.
 
+La scheda **Viaggio** calcola nel browser i percorsi tra due punti qualsiasi di Genova: partenza dalla posizione attuale o da un indirizzo, destinazione con completamento automatico (fermate dagli orari, indirizzi da Photon/OpenStreetMap).
+
 ## Attivazione
 
 1. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
