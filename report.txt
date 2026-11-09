@@ -25,5 +25,17 @@ codici fermata: ['']
 esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
 reti per la scheda Viaggio: 16 file, 5000 KB in tutto, il più grande 856 KB
 
+# Prova scheda Viaggio
+rete: 2673 fermate, 622 percorsi di linea, 857 KB, preparata in 18 ms
+Via Menotti > Piazza De Ferrari, ore 08:00: treno 0, bus 29, misto 8 (177 ms)
+  bus: 08:07-09:07, 5' a piedi, 1 MENOTTI 2/CHIESA 08:13 > CARICAMENTO/ACQUARIO 08:54, 9' a piedi
+  misto: 08:05-08:53, 9' a piedi, REG 12339 GENOVA SESTRI PONENTE 08:17 > GENOVA PIAZZA PRINCIPE 08:37 + MM PRINCIPE/METRO 08:45 > DE FERRARI/METRO 08:51, 1' a piedi
+Brignole > Nervi, ore 18:00: treno 11, bus 18, misto 0 (123 ms)
+  treno: 18:13-18:36, 3' a piedi, REG 12431 GENOVA BRIGNOLE 18:19 > GENOVA NERVI 18:35, 1' a piedi
+  bus: 18:02-18:51, 2' a piedi, 15 BRIGNOLE FS/CAPOLINEA 18:05 > OBERDAN 2/PONTE DI NERVI 18:39, 12' a piedi
+Marassi > Pegli, ore 07:30: treno 0, bus 21, misto 9 (63 ms)
+  bus: 07:33-08:48, 2' a piedi, 37 BERTUCCIONI 2/DE STEFANIS 07:36 > BRIGNOLE FS/ 07:47 + MM BRIGNOLE/METRO 07:51 > DINEGRO/METRO 08:02 + 1 BUOZZI 2/METRO-LANTERNA 08:05 > PEGLI 1/PORTICCIOLO 08:45, 3' a piedi
+  misto: 07:36-08:29, 5' a piedi, 14 BOBBIO 5/STADIO 07:42 > CANEVARI 3/MONTEGRAPPA 07:46 + REG 22824 GENOVA BRIGNOLE 07:56 > GENOVA PEGLI 08:23, 6' a piedi
+
 # Prova ponte live
-{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"00:16","min":10},{"line":"1","dest":"CARICAMENTO","time":"00:35","min":29}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"errors":{"GENOVA SESTRI PONENTE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht","GENOVA BRIGNOLE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht"},"at":"2026-11-09T23:06:40.087Z"}
+{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"00:16","min":6},{"line":"1","dest":"CARICAMENTO","time":"00:36","min":25}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"errors":{"GENOVA BRIGNOLE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht","GENOVA SESTRI PONENTE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht"},"at":"2026-11-09T23:10:58.445Z"}
