@@ -1,0 +1,33 @@
+name: Pubblica il ponte live
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", "wrangler.toml", ".github/workflows/ponte.yml"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Controlla il token
+        id: token
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "Manca il secret CLOUDFLARE_API_TOKEN: salto la pubblicazione."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - name: Test del ponte
+        if: steps.token.outputs.ok == 'true'
+        run: node --test tests/worker.test.mjs
+      - name: Pubblica su Cloudflare
+        if: steps.token.outputs.ok == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verifica
+        if: steps.token.outputs.ok == 'true'
+        run: |
+          sleep 10
+          curl -sS -m 40 "https://mezzi-corsa.luca-saglia-work.workers.dev/live?train=GENOVA%20SESTRI%20PONENTE" | head -c 1500
