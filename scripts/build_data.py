@@ -472,9 +472,9 @@ def build(amt_data, rail_data, cfg, out_dir, report_path, start=None, sources=No
     (out / "net").mkdir()
     nets = {}
 
-    start = start or dt.date.today()
+    start = (start or dt.date.today()) - dt.timedelta(days=1)  # anche ieri: corse dopo mezzanotte
     dates, cache = {}, {}
-    for offset in range(HORIZON_DAYS):
+    for offset in range(HORIZON_DAYS + 1):
         date = start + dt.timedelta(days=offset)
         a_trips, r_trips = amt.trips_on(date), rail.trips_on(date)
         if not a_trips and not r_trips:

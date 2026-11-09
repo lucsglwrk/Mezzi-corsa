@@ -217,10 +217,13 @@ function tripEl(j, s, labels) {
   head.append(times, dur);
   el.append(head);
   const note = (text) => { const d = document.createElement("div"); d.className = "walk"; d.textContent = text; el.append(d); };
+  const walkOut = arrive - legs[legs.length - 1][6];
   if (j[4]?.in) note(j[4].in);
+  else if (j[2] > 0) note(`${j[2]} min a piedi fino a ${s[legs[0][3]]}`);
   const parts = legs.map((l) => ({ leg: l, ...legEl(l, s, LEG) }));
   parts.forEach((p) => el.append(p.el));
   if (j[4]?.out) note(j[4].out);
+  else if (!j[4] && walkOut > 0) note(`poi ${walkOut} min a piedi`);
   const risk = document.createElement("div");
   risk.className = "risk";
   el.append(risk);
@@ -317,19 +320,20 @@ async function renderCorsa() {
 
   liveTrips = [];
   liveDate = date;
+  const notBefore = date === localToday() ? nowMin() : 0;
   const outward = CLASSES.map(([c, t]) => {
-    const items = (out[c] || []).filter((j) => j[1] <= target && j[1] > target - WINDOW_BEFORE)
+    const items = (out[c] || []).filter((j) => j[1] <= target && j[1] > target - WINDOW_BEFORE && j[0] >= notBefore)
       .sort((x, y) => y[1] - x[1] || y[0] - x[0]);
     return groupEl(c, t, items, day.s, ["esci", "arrivi"]);
   });
   const home = CLASSES.map(([c, t]) => {
-    const items = (back[c] || []).filter((j) => j[0] >= target + 60 && j[0] <= target + 240)
+    const items = (back[c] || []).filter((j) => j[0] >= target + 60 && j[0] <= target + 240 && j[0] >= notBefore)
       .sort((x, y) => x[0] - y[0] || x[1] - y[1]);
     return groupEl(c, t, items, day.s, ["parti", "a casa"]);
   });
 
   $("results").replaceChildren(
-    sectionEl(`Andata a ${name}`, `Per arrivare entro le ${hhmm(target)}. Le prime sono quelle che ti fanno uscire più tardi.`, outward, P.casa.maps, P[place].maps),
+    sectionEl(`Andata a ${name}`, `Per arrivare entro le ${hhmm(target)}. Le prime sono quelle che ti fanno uscire più tardi.${notBefore ? " Le partenze già passate non sono mostrate." : ""}`, outward, P.casa.maps, P[place].maps),
     sectionEl("Ritorno a casa", `Partenze da ${name} tra le ${hhmm(target + 60)} e le ${hhmm(target + 240)}.`, home, P[place].maps, P.casa.maps));
   refreshLive();
 }
@@ -382,8 +386,10 @@ function paintLive() {
         const at = hhmm(p.leg[5] + info.delay);
         const late = info.delay >= 2;
         const early = info.delay <= -2;
+        const wait = p.leg[5] + info.delay - nowMin();
+        const soon = liveDate !== localToday() || wait < 0 || wait > 59 ? "" : wait === 0 ? " · in arrivo" : ` · tra ${wait} min`;
         p.live.textContent = (late ? `${info.delay} min di ritardo, passa alle ${at}`
-          : early ? `In anticipo, passa alle ${at}` : "In orario") + platform;
+          : early ? `In anticipo, passa alle ${at}` : "In orario") + soon + platform;
         p.live.className = `live ${late || early ? "late" : "ok"}`;
       }
       const prev = parts[i - 1];
@@ -460,6 +466,17 @@ function position() {
 
 const plainText = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+function recentPlaces() {
+  try { return JSON.parse(store("recent") || "[]").filter((r) => r && r.label && Number.isFinite(r.lat) && Number.isFinite(r.lon)); } catch { return []; }
+}
+
+function remember(item) {
+  if (savedPlaces().some((p) => p.label === item.label)) return;
+  const list = [{ label: item.label, sub: item.sub || "", lat: item.lat, lon: item.lon }]
+    .concat(recentPlaces().filter((r) => r.label !== item.label)).slice(0, 5);
+  store("recent", JSON.stringify(list));
+}
+
 function savedPlaces() {
   return Object.values(index.places).map((p) => ({ label: p.name, sub: "Luogo salvato", lat: p.pos[0], lon: p.pos[1] }));
 }
@@ -497,6 +514,7 @@ function setupField(input, list, isFrom) {
   let timer = 0, abort = null;
   const pick = (item) => {
     if (isFrom) vFrom = item; else vTo = item;
+    if (item) remember(item);
     input.value = item ? item.label : "";
     list.hidden = true;
     render();
@@ -513,7 +531,7 @@ function setupField(input, list, isFrom) {
     }));
     list.hidden = !items.length;
   };
-  const defaults = () => (isFrom ? [{ label: "La mia posizione", sub: "Usa il GPS del telefono", here: true }] : []).concat(savedPlaces());
+  const defaults = () => (isFrom ? [{ label: "La mia posizione", sub: "Usa il GPS del telefono", here: true }] : []).concat(savedPlaces(), recentPlaces().map((r) => ({ ...r, sub: r.sub ? `Recente · ${r.sub}` : "Recente" })));
   const update = () => {
     const query = input.value.trim();
     clearTimeout(timer);
@@ -534,6 +552,7 @@ function setupField(input, list, isFrom) {
   };
   input.addEventListener("input", () => { if (isFrom) vFrom = undefined; else vTo = null; update(); });
   input.addEventListener("focus", () => { input.select(); update(); });
+  input.addEventListener("keydown", (e) => { if (e.key === "Escape") list.hidden = true; });
   input.addEventListener("blur", () => setTimeout(() => {
     list.hidden = true;
     if (isFrom && vFrom === undefined) { vFrom = null; input.value = ""; render(); }
@@ -595,12 +614,31 @@ async function renderViaggio() {
   if (run !== vRun) return;
   const s = [];
   const add = (v) => s.push(v) - 1;
-  const item = (j) => [j.leave, j.arrive, j.walkIn, j.legs.map((l) => [l.mode, add(l.line), add(l.head), add(net.stops[l.from].name), add(net.stops[l.to].name), l.dep, l.arr, net.stops[l.from].code]), {
-    in: `${j.walkIn} min a piedi fino a ${net.stops[j.legs[0].from].name}`,
+  const item = (j, n = net, shift = 0) => [j.leave - shift, j.arrive - shift, j.walkIn, j.legs.map((l) => [l.mode, add(l.line), add(l.head), add(n.stops[l.from].name), add(n.stops[l.to].name), l.dep - shift, l.arr - shift, n.stops[l.from].code]), {
+    in: `${j.walkIn} min a piedi fino a ${n.stops[j.legs[0].from].name}`,
     out: `poi ${j.walkOut} min a piedi`,
   }];
+  const lists = Object.fromEntries(CLASSES.map(([c]) => [c, found[c].map((j) => item(j))]));
+  // Dopo mezzanotte le ultime corse appartengono agli orari del giorno prima.
+  if (depart < 240) {
+    const d = new Date(`${date}T12:00:00`);
+    d.setDate(d.getDate() - 1);
+    const prev = index.dates[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`];
+    if (prev?.net) {
+      try {
+        const night = await loadNet(prev.net);
+        if (run !== vRun) return;
+        const late = Router.plan(night, from, vTo, depart + 1440, SEARCH_WINDOW);
+        CLASSES.forEach(([c]) => {
+          const seen = new Set(lists[c].map((j) => `${j[0]}|${j[1]}`));
+          late[c].map((j) => item(j, night, 1440)).forEach((j) => { if (!seen.has(`${j[0]}|${j[1]}`)) lists[c].push(j); });
+          lists[c].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+        });
+      } catch { /* senza gli orari di ieri restano quelli di oggi */ }
+    }
+  }
   liveTrips = [];
-  const groups = CLASSES.map(([c, t]) => groupEl(c, t, found[c].map(item), s, ["parti", "arrivi"]));
+  const groups = CLASSES.map(([c, t]) => groupEl(c, t, lists[c], s, ["parti", "arrivi"]));
   const walk = Router.walkMin(direct);
   const hint = `Partenze tra le ${hhmm(depart)} e le ${hhmm(depart + SEARCH_WINDOW)}.` + (walk <= 40 ? ` A piedi sono circa ${walk} minuti.` : "");
   const coord = (p) => `${p.lat.toFixed(5)},${p.lon.toFixed(5)}`;
