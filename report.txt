@@ -6,25 +6,36 @@ Sturla: 44.39798, 8.98147, 35 fermate: BRIGATA SALERNO/ERA, CAPRERA/ORSINI, CAVA
 Piazzale Kennedy: 44.39450, 8.94550, 47 fermate: BARABINO 1/PALERMO, BARABINO 2/TORINO, BARABINO 3/CIPRO, BARABINO/TORINO, BATTISTI/SCUOLE, BRIGATA BISAGNO 1/BARABINO, BRIGATE PARTIGIANE 1/DIAZ, BRIGATE PARTIGIANE 1/GESTRO, BRIGATE PARTIGIANE 2/CECCHI, BRIGATE PARTIGIANE 2/RUSPOLI, DIAZ/BRIGATE PARTIGIANE, GENOVA BRIGNOLE, ITALIA 1/PUNTA VAGNO, ITALIA 2/PIAVE
 Quarto: 44.38861, 8.99598, 15 fermate: CARRARA 1/V MAGGIO, CARRARA 5/V MAGGIO, GENOVA QUARTO DEI MILLE, QUARTO 1/PRIARUGGIA, QUARTO 2/CAPO SAN ROCCO, QUARTO 2/QUARTARA, QUARTO 3/CAPO SAN ROCCO, QUARTO 3/QUARTARA, V MAGGIO 1/PRIARUGGIA, V MAGGIO 2/CARRARA, V MAGGIO 2/QUARTO FS, V MAGGIO 3/VILLA CARRARA, V MAGGIO 4/CARRARA, V MAGGIO 4/QUARTO FS
 
-casa>sturla: treno: 18
-sturla>casa: treno: 17
-casa>kennedy: treno: 34
-kennedy>casa: treno: 35
-casa>quarto: treno: 18
-quarto>casa: treno: 17
+casa>sturla: bus: 65, misto: 11, treno: 52
+sturla>casa: bus: 87, misto: 12, treno: 49
+casa>kennedy: bus: 154, misto: 61, treno: 70
+kennedy>casa: bus: 138, misto: 86, treno: 66
+casa>quarto: bus: 56, misto: 8, treno: 52
+quarto>casa: bus: 77, misto: 9, treno: 50
 
+codici fermata: ['0075', '2541', '0298']
+esempio bus: esci 16:38, arrivi 18:09: 1 MENOTTI 2/CHIESA 16:41 > MARITTIMA/PRINCIPE FS 17:16 + 20 GRAMSCI 1/COMMENDA 17:27 > BUENOS AIRES 1/LAMBRUSCHINI 17:44 + 15 BUENOS AIRES 1/LAMBRUSCHINI 17:46 > V MAGGIO 4/QUARTO FS 18:07
+codici fermata: ['0075', '2541', '0298']
+esempio bus: esci 16:51, arrivi 18:20: 3 MENOTTI 2/CHIESA 16:54 > DORIA/METRO' PRINCIPE 17:28 + 20 GRAMSCI 1/COMMENDA 17:36 > BUENOS AIRES 1/LAMBRUSCHINI 17:53 + 15 BUENOS AIRES 1/LAMBRUSCHINI 17:57 > V MAGGIO 4/QUARTO FS 18:18
 codici fermata: ['']
-esempio treno: esci 17:46, arrivi 18:26: REG 12433 GENOVA SESTRI PONENTE 17:54 > GENOVA QUARTO DEI MILLE 18:26
-reti per la scheda Viaggio: 17 file, 5010 KB in tutto, il più grande 856 KB
+esempio treno: esci 17:01, arrivi 17:45: REG 22879 GENOVA SESTRI PONENTE 17:09 > GENOVA QUARTO DEI MILLE 17:45
+codici fermata: ['']
+esempio treno: esci 17:16, arrivi 17:57: REG 12427 GENOVA SESTRI PONENTE 17:24 > GENOVA QUARTO DEI MILLE 17:57
+codici fermata: ['']
+esempio treno: esci 17:31, arrivi 18:10: REG 22863 GENOVA SESTRI PONENTE 17:39 > GENOVA QUARTO DEI MILLE 18:10
+reti per la scheda Viaggio: 17 file, 4168 KB in tutto, il più grande 856 KB
 
 # Prova scheda Viaggio
-rete: 27 fermate, 72 percorsi di linea, 9 KB, preparata in 1 ms
-Via Menotti > Piazza De Ferrari, ore 08:00: treno 5, bus 0, misto 0 (9 ms)
-  treno: 08:05-09:05, 9' a piedi, REG 12339 GENOVA SESTRI PONENTE 08:17 > GENOVA PIAZZA PRINCIPE 08:37, 28' a piedi
-Brignole > Nervi, ore 18:00: treno 5, bus 0, misto 0 (11 ms)
-  treno: 18:13-18:36, 3' a piedi, REG 12433 GENOVA BRIGNOLE 18:19 > GENOVA NERVI 18:35, 1' a piedi
-Marassi > Pegli, ore 07:30: treno 3, bus 0, misto 0 (9 ms)
-  treno: 07:32-08:31, 21' a piedi, REG 12322 GENOVA BRIGNOLE 07:56 > GENOVA PEGLI 08:25, 6' a piedi
+rete: 2673 fermate, 621 percorsi di linea, 857 KB, preparata in 17 ms
+Via Menotti > Piazza De Ferrari, ore 08:00: treno 0, bus 29, misto 8 (151 ms)
+  bus: 08:07-09:07, 5' a piedi, 1 MENOTTI 2/CHIESA 08:13 > CARICAMENTO/ACQUARIO 08:54, 9' a piedi
+  misto: 08:05-08:53, 9' a piedi, REG 12339 GENOVA SESTRI PONENTE 08:17 > GENOVA PIAZZA PRINCIPE 08:37 + MM PRINCIPE/METRO 08:45 > DE FERRARI/METRO 08:51, 1' a piedi
+Brignole > Nervi, ore 18:00: treno 11, bus 18, misto 0 (82 ms)
+  treno: 18:13-18:36, 3' a piedi, REG 12431 GENOVA BRIGNOLE 18:19 > GENOVA NERVI 18:35, 1' a piedi
+  bus: 18:02-18:51, 2' a piedi, 15 BRIGNOLE FS/CAPOLINEA 18:05 > OBERDAN 2/PONTE DI NERVI 18:39, 12' a piedi
+Marassi > Pegli, ore 07:30: treno 0, bus 21, misto 9 (56 ms)
+  bus: 07:33-08:48, 2' a piedi, 37 BERTUCCIONI 2/DE STEFANIS 07:36 > BRIGNOLE FS/ 07:47 + MM BRIGNOLE/METRO 07:51 > DINEGRO/METRO 08:02 + 1 BUOZZI 2/METRO-LANTERNA 08:05 > PEGLI 1/PORTICCIOLO 08:45, 3' a piedi
+  misto: 07:36-08:29, 5' a piedi, 14 BOBBIO 5/STADIO 07:42 > CANEVARI 3/MONTEGRAPPA 07:46 + REG 22824 GENOVA BRIGNOLE 07:56 > GENOVA PEGLI 08:23, 6' a piedi
 
 # Prova ponte live
-{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"00:33","min":5},{"line":"1","dest":"CARICAMENTO","time":"00:54","min":26}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"errors":{"GENOVA SESTRI PONENTE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht","GENOVA BRIGNOLE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht"},"at":"2026-11-09T23:28:31.975Z"}
+{"bus":{"0075":[{"line":"1","dest":"CARICAMENTO","time":"12:10","min":5},{"line":"159","dest":"SESTRI","time":"12:20","min":14},{"line":"3","dest":"PRINCIPE FS","time":"12:23","min":17},{"line":"128","dest":"ERZELLI","time":"12:23","min":17},{"line":"1","dest":"CARICAMENTO","time":"12:25","min":19},{"line":"172","dest":"SESTRI","time":"12:28","min":22},{"line":"1","dest":"CARICAMENTO","time":"12:32","min":26}]},"train":{"GENOVA SESTRI PONENTE":null,"GENOVA BRIGNOLE":null},"errors":{"GENOVA BRIGNOLE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht","GENOVA SESTRI PONENTE":"ViaggiaTreno 403: <HTML><HEAD>\n<TITLE>Access Denied</TITLE>\n</HEAD><BODY>\n<H1>Access Denied</H1>\n \nYou don't have permission to access \"ht"},"at":"2026-11-12T11:06:12.231Z"}
